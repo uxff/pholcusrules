@@ -33,12 +33,12 @@ import (
 )
 
 func init() {
-	Hejin.Register()
+	Hejinx.Register()
 }
 
-var Hejin = &Spider{
-	Name:         "HEJIN",
-	Description:  `HEJIN 自定义输入格式 url`,
+var Hejinx = &Spider{
+	Name:         "HEJINx",
+	Description:  `HEJINx 自定义输入格式 url`,
 	Pausetime:    2000,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
@@ -229,6 +229,9 @@ var Hejin = &Spider{
 					var url = ctx.GetUrl()
 					logs.Log.Warning("start dcexcel:%v len=%v", url, len(text))
 					openIdNum := 0
+					openIdMap := map[string]string{}
+					doTicket := false
+
 					if len(text) > 0 {
 						br := bufio.NewReader(strings.NewReader(text))
 						for {
@@ -253,11 +256,29 @@ var Hejin = &Spider{
 									// not valid openid
 									continue
 								}
+
+								if _, oExist := openIdMap[openId]; !oExist {
+									openIdMap[openId] = zid
+								}
 								//logs.Log.Warning("got a openid:%v %v", zid, openId)
 
 								// 中间被停止
 								//time.Sleep(time.Second * 3)
+							}
+							if openIdNum > 10 {
+								//break
+							}
+						}
 
+						logs.Log.Warning("openIdNum=%v len(map)=%v", openIdNum, len(openIdMap))
+						for openId, zidVal := range openIdMap {
+							rowRet := map[int]interface{}{
+								0: zidVal,
+								1: openId,
+							}
+							ctx.Output(rowRet)
+
+							if doTicket {
 								// start ticket
 								url = ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + ctx.GetTemp("formhash", "").(string)
 								ctx.AddQueue(&request.Request{
@@ -277,23 +298,8 @@ var Hejin = &Spider{
 										"formhash": ctx.GetTemp("formhash", ""),
 									},
 								})
-
-								rowRet := map[int]interface{}{
-									0: zid,
-									1: openId,
-								}
-
-								ctx.Output(rowRet)
-
 							}
-							if openIdNum > 10 {
-								break
-							}
-
 						}
-
-						logs.Log.Warning("openIdNum=%v", openIdNum)
-						return
 					}
 					return
 				},

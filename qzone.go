@@ -29,10 +29,10 @@ import (
 )
 
 func init() {
-	QzoneArticles.Register()
+	QzoneArticlesx.Register()
 }
 
-var QzoneArticles = &Spider{
+var QzoneArticlesx = &Spider{
 	Name:         "QZONE",
 	Description:  `QZONE [自定义输入格式 "ID"::"Cookie"][最多支持250页，内设定时1~2s]`,
 	Pausetime:    2000,
