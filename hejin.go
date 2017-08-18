@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"os"
 	//"io/ioutil"
 	// net包
 	"net/http" //设置http.Header
@@ -47,10 +48,36 @@ var Hejinx = &Spider{
 		Root: func(ctx *Context) {
 			//ctx.Request is nil, dont use it here
 			param := ctx.GetKeyin()
+			rootUrl := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20`
 			if len(param) <= 12 {
 				logs.Log.Warning("自定义输入的url参数不正确！ use default")
 				//return
-				param = `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20`
+				param = rootUrl
+			}
+			paramPre := []byte(param)[:4]
+			if string(paramPre) == "file" {
+				// do read from file
+				fileDirPath := []byte(param)[5:]
+				urlPre := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao`
+				urlTop300 := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=top300&zid=20`
+				ctx.AddQueue(&request.Request{
+					Url:  urlTop300,
+					Rule: "top300",
+					Header: http.Header{
+						"Cookie":     []string{},
+						"Referer":    []string{urlTop300},
+						"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
+					},
+					DownloaderID: 0,
+					Temp: map[string]interface{}{
+						"zid":         "20",
+						"urlPre":      urlPre,
+						"vid":         "1",
+						"theaction":   "ticket",
+						"fileDirPath": string(fileDirPath),
+					},
+				})
+				return
 			}
 			//logs.Log.Warning("param=%v", param)
 
@@ -72,9 +99,6 @@ var Hejinx = &Spider{
 			if !pluginIdExist || len(pluginId) == 0 {
 				logs.Log.Error("不是有效的url,pluginId not exist,有效的url应该类似：http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=1 ")
 				return
-				///} else if string(pluginId[0])[:5] != "hejin" {
-				//logs.Log.Error("不是有效的url,pluginId != hejin*,有效的url应该类似：http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=1 %v", pluginId[0])
-				//return
 			}
 			logs.Log.Error("pluginId=%v urlModel=%v", pluginId, urlModel)
 			vid, vidExist := urlParams["vid"]
@@ -90,14 +114,12 @@ var Hejinx = &Spider{
 				return
 			}
 
-			//logs.Log.Error("zid=%v", zid)
 			//ctx.SetTemp("pluginId", pluginId[0]) // cannot use ctx.SetTemp in root
 
 			/* 思路：获取所有zid；根据zid导出openid；唯一openid；请求ticket带cookie */
 			// urlTop300 := "http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=top300&vid=1#top300"
 			// formhash 在 top300 中
 			urlPre := urlParsed.Scheme + "://" + urlParsed.Host + urlParsed.Path + "?id=" + pluginId[0]
-			//ctx.SetTemp("urlPre", urlPre)
 			urlTop300 := urlPre + "&model=top300&vid=" + vid[0]
 			logs.Log.Warning("will top300: %v", urlTop300)
 
@@ -191,30 +213,97 @@ var Hejinx = &Spider{
 					}
 
 					logs.Log.Warning("uids: len=%d %v", len(uids), uids)
-					randSlice(uids)
 
-					for _, uid := range uids {
-						url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + strconv.FormatInt(int64(uid), 10)
-						logs.Log.Warning("will dcexcel: %v", url)
+					theAction := ctx.GetTemp("theaction", "").(string)
+					switch theAction {
+					case "dcexcel":
+						randSlice(uids)
 
-						ctx.AddQueue(&request.Request{
-							Url:  url,
-							Rule: "dcexcel",
-							Header: http.Header{
-								"Cookie":     []string{},
-								"Referer":    []string{url},
-								"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
-							},
-							DownloaderID: 0,
-							Temp: map[string]interface{}{
-								"urlPre":   ctx.GetTemp("urlPre", ""),
-								"vid":      ctx.GetTemp("vid", ""),
-								"zid":      ctx.GetTemp("zid", ""),
-								"formhash": formhash,
-							},
-						})
+						for _, uid := range uids {
+							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + strconv.FormatInt(int64(uid), 10)
+							logs.Log.Warning("will dcexcel: %v", url)
 
+							ctx.AddQueue(&request.Request{
+								Url:  url,
+								Rule: "dcexcel",
+								Header: http.Header{
+									"Cookie":     []string{},
+									"Referer":    []string{url},
+									"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
+								},
+								DownloaderID: 0,
+								Temp: map[string]interface{}{
+									"urlPre":   ctx.GetTemp("urlPre", ""),
+									"vid":      ctx.GetTemp("vid", ""),
+									"zid":      ctx.GetTemp("zid", ""),
+									"formhash": formhash,
+								},
+							})
+
+						}
+					case "ticket":
+						fileDirPath := ctx.GetTemp("fileDirPath", "").(string)
+						fr, err := os.Open(fileDirPath)
+						defer fr.Close()
+						if err != nil {
+							logs.Log.Error("open file:%v %v", fileDirPath, err)
+							return
+						}
+
+						br := bufio.NewReader(fr)
+						for {
+							line, err := br.ReadString('\n')
+							line = strings.TrimSpace(line)
+							if err == io.EOF {
+								break
+							}
+							if err != nil {
+								logs.Log.Error("cannot read file:%v %v", fileDirPath, err)
+								break
+							}
+
+							commaPos := strings.Index(string(line), ",")
+							zid := "21"
+							openId := ""
+							if commaPos > 0 {
+								zid = string(line[:commaPos])
+								line = line[commaPos+1:]
+								commaPos2 := strings.Index(string(line), ",")
+								if commaPos2 > 0 {
+									openId = string(line[:commaPos2])
+								} else {
+									openId = string(line)
+								}
+								if len(openId) > 0 && openId[0] != 'o' {
+									// not valid openid
+									continue
+								}
+
+								urlPre := "http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao"
+								formhash := ""
+								theurl := urlPre + "&model=ticket&zid=" + zid + "&formhash=" + formhash
+								ctx.AddQueue(&request.Request{
+									Url:  theurl,
+									Rule: "ticket",
+									Header: http.Header{
+										"Cookie":     []string{"hjbox_openid=" + openId},
+										"Referer":    []string{theurl},
+										"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
+									},
+									DownloaderID: 0,
+									Temp: map[string]interface{}{
+										"urlPre":   ctx.GetTemp("urlPre", ""),
+										"vid":      ctx.GetTemp("vid", ""),
+										"zid":      ctx.GetTemp("zid", ""),
+										"openid":   openId,
+										"formhash": ctx.GetTemp("formhash", ""),
+									},
+								})
+
+							}
+						}
 					}
+
 					ctx.SetTemp("uids", uids)
 				},
 			},
