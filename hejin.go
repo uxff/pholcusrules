@@ -37,6 +37,19 @@ func init() {
 	Hejinx.Register()
 }
 
+var VoteStatus = map[string]string{
+	"108": "投票成功",
+	"102": "未关注公众号",
+	"103": "投票活动未开始",
+	"104": "投票活动已结束",
+	"105": "此ip下今日已无法投票",
+	"106": "此用户今日已无法投票",
+	"107": "投票记录插入失败,疑似选手被锁定",
+	"109": "今日已经给这个用户投过票了",
+	"110": "ip不在限制范围中",
+	"120": "报名期间达到投票限制数",
+}
+
 var Hejinx = &Spider{
 	Name:         "HEJINx",
 	Description:  `HEJINx 自定义输入格式 url`,
@@ -46,6 +59,7 @@ var Hejinx = &Spider{
 	EnableCookie: true,
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
+			rand.Seed(time.Now().UnixNano())
 			//ctx.Request is nil, dont use it here
 			param := ctx.GetKeyin()
 			rootUrl := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20`
@@ -54,12 +68,22 @@ var Hejinx = &Spider{
 				//return
 				param = rootUrl
 			}
+			// 特定参数: file|E:\BaiduYunDownload\20000-29702.csv|11
 			paramPre := []byte(param)[:4]
+			paramZid := "23"
 			if string(paramPre) == "file" {
 				// do read from file
 				fileDirPath := []byte(param)[5:]
+				filePathArr := bytes.Split(fileDirPath, []byte("|"))
+				if len(filePathArr) == 1 {
+					fileDirPath = filePathArr[0]
+				} else if len(filePathArr) == 2 {
+					fileDirPath = filePathArr[0]
+					paramZid = string(filePathArr[1])
+				}
+
 				urlPre := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao`
-				urlTop300 := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=top300&zid=20`
+				urlTop300 := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=top300&vid=1`
 				ctx.AddQueue(&request.Request{
 					Url:  urlTop300,
 					Rule: "top300",
@@ -70,12 +94,15 @@ var Hejinx = &Spider{
 					},
 					DownloaderID: 0,
 					Temp: map[string]interface{}{
-						"zid":         "20",
+						"zid":         paramZid,
 						"urlPre":      urlPre,
 						"vid":         "1",
 						"theaction":   "ticket",
 						"fileDirPath": string(fileDirPath),
 					},
+					Reloadable:  true,
+					ConnTimeout: 5 * time.Second,
+					DialTimeout: 5 * time.Second,
 				})
 				return
 			}
@@ -100,14 +127,14 @@ var Hejinx = &Spider{
 				logs.Log.Error("不是有效的url,pluginId not exist,有效的url应该类似：http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=1 ")
 				return
 			}
-			logs.Log.Error("pluginId=%v urlModel=%v", pluginId, urlModel)
+			logs.Log.Warning("pluginId=%v urlModel=%v", pluginId, urlModel)
 			vid, vidExist := urlParams["vid"]
 			if !vidExist || len(vid) == 0 {
 				vid = make([]string, 1)
 				vid[0] = "1"
 			}
 
-			logs.Log.Error("vid=%v", vid)
+			logs.Log.Warning("vid=%v", vid)
 			zid, zidExist := urlParams["zid"]
 			if !zidExist || len(zid) == 0 {
 				logs.Log.Error("没有匹配到要投票的用户 请输入带zid的url %v", zid[0])
@@ -139,6 +166,9 @@ var Hejinx = &Spider{
 					"urlPre":   urlPre,
 					"vid":      vid[0],
 				},
+				Reloadable:  true,
+				ConnTimeout: 5 * time.Second,
+				DialTimeout: 5 * time.Second,
 			})
 		},
 
@@ -212,12 +242,12 @@ var Hejinx = &Spider{
 						break
 					}
 
+					randSlice(uids)
 					logs.Log.Warning("uids: len=%d %v", len(uids), uids)
 
 					theAction := ctx.GetTemp("theaction", "").(string)
 					switch theAction {
 					case "dcexcel":
-						randSlice(uids)
 
 						for _, uid := range uids {
 							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + strconv.FormatInt(int64(uid), 10)
@@ -243,6 +273,7 @@ var Hejinx = &Spider{
 						}
 					case "ticket":
 						fileDirPath := ctx.GetTemp("fileDirPath", "").(string)
+						logs.Log.Warning("will open:%v", fileDirPath)
 						fr, err := os.Open(fileDirPath)
 						defer fr.Close()
 						if err != nil {
@@ -251,6 +282,9 @@ var Hejinx = &Spider{
 						}
 
 						br := bufio.NewReader(fr)
+						openIdNum := 0
+						openIdStartNo := rand.Int() % 1000
+
 						for {
 							line, err := br.ReadString('\n')
 							line = strings.TrimSpace(line)
@@ -279,9 +313,14 @@ var Hejinx = &Spider{
 									continue
 								}
 
+								openIdNum++
+								if openIdNum < openIdStartNo {
+									continue
+								}
+
 								urlPre := "http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao"
-								formhash := ""
-								theurl := urlPre + "&model=ticket&zid=" + zid + "&formhash=" + formhash
+								//formhash := ""
+								theurl := urlPre + "&model=ticket&zid=" + ctx.GetTemp("zid", zid).(string) + "&formhash=" + formhash
 								ctx.AddQueue(&request.Request{
 									Url:  theurl,
 									Rule: "ticket",
@@ -292,16 +331,21 @@ var Hejinx = &Spider{
 									},
 									DownloaderID: 0,
 									Temp: map[string]interface{}{
-										"urlPre":   ctx.GetTemp("urlPre", ""),
+										"urlPre":   urlPre,
 										"vid":      ctx.GetTemp("vid", ""),
 										"zid":      ctx.GetTemp("zid", ""),
 										"openid":   openId,
-										"formhash": ctx.GetTemp("formhash", ""),
+										"formhash": formhash,
+										"lineNo":   openIdNum,
 									},
+									Reloadable:  true,
+									ConnTimeout: 5 * time.Second,
+									DialTimeout: 5 * time.Second,
 								})
 
 							}
 						}
+						logs.Log.Warning("all ticket:%d", openIdNum)
 					}
 
 					ctx.SetTemp("uids", uids)
@@ -360,7 +404,9 @@ var Hejinx = &Spider{
 						}
 
 						logs.Log.Warning("openIdNum=%v len(map)=%v", openIdNum, len(openIdMap))
+						lineNo := 0
 						for openId, zidVal := range openIdMap {
+							lineNo++
 							rowRet := map[int]interface{}{
 								0: zidVal,
 								1: openId,
@@ -385,7 +431,11 @@ var Hejinx = &Spider{
 										"zid":      ctx.GetTemp("zid", ""),
 										"openid":   openId,
 										"formhash": ctx.GetTemp("formhash", ""),
+										"linoNo":   lineNo,
 									},
+									Reloadable:  true,
+									ConnTimeout: 5 * time.Second,
+									DialTimeout: 5 * time.Second,
 								})
 							}
 						}
@@ -404,7 +454,9 @@ var Hejinx = &Spider{
 					status := []byte(text)[:16]
 					zid := ctx.GetTemp("zid", "")
 					openId := ctx.GetTemp("openid", "")
-					logs.Log.Warning("TICKET zid=%v openid=%v len(text)=%v status=%s", zid, openId, len(text), string(status))
+					lineNo := ctx.GetTemp("lineNo", 1)
+					statusDesc, statusExist := VoteStatus[string(status)]
+					logs.Log.Warning("TICKET for %v openid=%v %v len(text)=%v status=%s %v %v", zid, openId, lineNo, len(text), string(status), statusDesc, statusExist)
 
 					rowRet := map[int]interface{}{
 						0: zid,
