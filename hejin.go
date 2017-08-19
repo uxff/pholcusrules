@@ -283,7 +283,7 @@ var Hejinx = &Spider{
 
 						br := bufio.NewReader(fr)
 						openIdNum := 0
-						openIdStartNo := rand.Int() % 1000
+						openIdStartNo := rand.Int() % 10000
 
 						zidTemp := ctx.GetTemp("zid", "32").(string)
 						zids := strings.Split(zidTemp, ",")
@@ -456,7 +456,7 @@ var Hejinx = &Spider{
 					zid := ctx.GetTemp("zid", "")
 					openId := ctx.GetTemp("openid", "")
 					lineNo := ctx.GetTemp("lineNo", 1)
-					statusDesc, statusExist := VoteStatus[string(status)]
+					statusDesc, statusExist := VoteStatus[text]
 					logs.Log.Warning("TICKET for %v openid=%v %v len(text)=%v status=%s %v %v", zid, openId, lineNo, len(text), string(status), statusDesc, statusExist)
 
 					rowRet := map[int]interface{}{
@@ -467,6 +467,7 @@ var Hejinx = &Spider{
 
 					// 结果输出
 					ctx.Output(rowRet)
+					//ctx.FileOutput([]string{"filecache"})
 				},
 			},
 		},
