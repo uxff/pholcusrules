@@ -285,6 +285,9 @@ var Hejinx = &Spider{
 						openIdNum := 0
 						openIdStartNo := rand.Int() % 1000
 
+						zidTemp := ctx.GetTemp("zid", "32").(string)
+						zids := strings.Split(zidTemp, ",")
+
 						for {
 							line, err := br.ReadString('\n')
 							line = strings.TrimSpace(line)
@@ -297,10 +300,8 @@ var Hejinx = &Spider{
 							}
 
 							commaPos := strings.Index(string(line), ",")
-							zid := "21"
 							openId := ""
 							if commaPos > 0 {
-								zid = string(line[:commaPos])
 								line = line[commaPos+1:]
 								commaPos2 := strings.Index(string(line), ",")
 								if commaPos2 > 0 {
@@ -319,8 +320,8 @@ var Hejinx = &Spider{
 								}
 
 								urlPre := "http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao"
-								//formhash := ""
-								theurl := urlPre + "&model=ticket&zid=" + ctx.GetTemp("zid", zid).(string) + "&formhash=" + formhash
+								zidTemp = string(zids[openIdNum%len(zids)])
+								theurl := urlPre + "&model=ticket&zid=" + zidTemp + "&formhash=" + formhash
 								ctx.AddQueue(&request.Request{
 									Url:  theurl,
 									Rule: "ticket",
@@ -333,7 +334,7 @@ var Hejinx = &Spider{
 									Temp: map[string]interface{}{
 										"urlPre":   urlPre,
 										"vid":      ctx.GetTemp("vid", ""),
-										"zid":      ctx.GetTemp("zid", ""),
+										"zid":      zidTemp,
 										"openid":   openId,
 										"formhash": formhash,
 										"lineNo":   openIdNum,
