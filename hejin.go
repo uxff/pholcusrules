@@ -33,7 +33,10 @@ import (
 	"time"
 )
 
+var openIdChan chan string
+
 func init() {
+	openIdChan = make(chan string, 10)
 	Hejinx.Register()
 }
 
@@ -50,9 +53,11 @@ var VoteStatus = map[string]string{
 	"120": "报名期间达到投票限制数",
 }
 
+var openIdFilePrefix = "openid_"
+
 var Hejinx = &Spider{
 	Name:         "HEJINx",
-	Description:  `HEJINx 自定义输入格式 url`,
+	Description:  `HEJINx 自定义输入格式 [url[|zids[|isRefreshOpenid]]]`,
 	Pausetime:    2000,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
@@ -60,8 +65,10 @@ var Hejinx = &Spider{
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
 			rand.Seed(time.Now().UnixNano())
+
 			//ctx.Request is nil, dont use it here
 			param := ctx.GetKeyin()
+			// http://www.vtianmen.com/plugin.php?id=hejin_toupiao&model=top300&vid=1&zid=41#top300
 			rootUrl := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20`
 			if len(param) <= 12 {
 				logs.Log.Warning("自定义输入的url参数不正确！ use default")
@@ -137,7 +144,9 @@ var Hejinx = &Spider{
 			logs.Log.Warning("vid=%v", vid)
 			zid, zidExist := urlParams["zid"]
 			if !zidExist || len(zid) == 0 {
-				logs.Log.Error("没有匹配到要投票的用户 请输入带zid的url %v", zid[0])
+				logs.Log.Error("没有匹配到要投票的用户 请输入带zid的url")
+				zid = make([]string, 1)
+				zid[0] = paramZid
 				return
 			}
 
@@ -155,7 +164,7 @@ var Hejinx = &Spider{
 				Rule: "top300",
 				Header: http.Header{
 					"Cookie":     []string{},
-					"Referer":    []string{param},
+					"Referer":    []string{urlPre},
 					"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
 				},
 				DownloaderID: 0,
@@ -165,6 +174,7 @@ var Hejinx = &Spider{
 					"pluginId": pluginId[0],
 					"urlPre":   urlPre,
 					"vid":      vid[0],
+					"domain":   urlParsed.Host,
 				},
 				Reloadable:  true,
 				ConnTimeout: 5 * time.Second,
@@ -177,7 +187,6 @@ var Hejinx = &Spider{
 				ParseFunc: func(ctx *Context) {
 					logs.Log.Warning("start top300: url=%v", ctx.GetUrl())
 					//query := ctx.GetDom()
-					//logs.Log.Warning("got query when top300")
 					if ctx.Response == nil {
 						logs.Log.Error("no response!")
 						return
@@ -244,6 +253,47 @@ var Hejinx = &Spider{
 
 					randSlice(uids)
 					logs.Log.Warning("uids: len=%d %v", len(uids), uids)
+
+					go ctx.Parse("ticketFromChan")
+
+					// 如果有openidcache则读openidcache，如果没有则下载并保存
+					openIdMap, openIdCacheExist := readOpenidCache(ctx.GetTemp("domain", "").(string))
+					if openIdCacheExist {
+						// use openid for ticket, openidChan<-openId
+						for openId, _ := range openIdMap {
+							logs.Log.Warning("will ticket by chan openid: %v", openId)
+							openIdChan <- openId
+						}
+					} else {
+						// download openid, and for ticket, openidChan<-openId
+						for i, uid := range uids {
+							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + strconv.FormatInt(int64(uid), 10)
+							logs.Log.Warning("will dcexcel: %v", url)
+							if i > 10 {
+								break
+							}
+
+							ctx.AddQueue(&request.Request{
+								Url:  url,
+								Rule: "dcexcel",
+								Header: http.Header{
+									"Cookie":     []string{},
+									"Referer":    []string{url},
+									"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
+								},
+								DownloaderID: 0,
+								Temp: map[string]interface{}{
+									"urlPre":   ctx.GetTemp("urlPre", ""),
+									"vid":      ctx.GetTemp("vid", ""),
+									"zid":      ctx.GetTemp("zid", ""),
+									"formhash": formhash,
+									"chan":     "1",
+								},
+							})
+
+						}
+					}
+					return
 
 					theAction := ctx.GetTemp("theaction", "").(string)
 					switch theAction {
@@ -365,6 +415,7 @@ var Hejinx = &Spider{
 					openIdNum := 0
 					openIdMap := map[string]string{}
 					doTicket := false
+					doCopyToChan := ctx.GetTemp("chan", "")
 
 					if len(text) > 0 {
 						br := bufio.NewReader(strings.NewReader(text))
@@ -400,7 +451,7 @@ var Hejinx = &Spider{
 								//time.Sleep(time.Second * 3)
 							}
 							if openIdNum > 10 {
-								//break
+								break
 							}
 						}
 
@@ -413,6 +464,13 @@ var Hejinx = &Spider{
 								1: openId,
 							}
 							ctx.Output(rowRet)
+
+							//io.WriteString(fo, zidVal+","+openId+"\n")
+							if doCopyToChan == "1" {
+								logs.Log.Warning("will do ticket by chan openid:%v", openId)
+								openIdChan <- openId
+							}
+							continue
 
 							if doTicket {
 								// start ticket
@@ -456,18 +514,52 @@ var Hejinx = &Spider{
 					zid := ctx.GetTemp("zid", "")
 					openId := ctx.GetTemp("openid", "")
 					lineNo := ctx.GetTemp("lineNo", 1)
-					statusDesc, statusExist := VoteStatus[text]
+
+					statusDesc, statusExist := VoteStatus[strings.TrimSpace(string(status))]
 					logs.Log.Warning("TICKET for %v openid=%v %v len(text)=%v status=%s %v %v", zid, openId, lineNo, len(text), string(status), statusDesc, statusExist)
 
 					rowRet := map[int]interface{}{
 						0: zid,
 						1: openId,
-						2: string(status),
+						2: text,
 					}
 
 					// 结果输出
 					ctx.Output(rowRet)
 					//ctx.FileOutput([]string{"filecache"})
+				},
+			},
+			"ticketFromChan": {
+				ParseFunc: func(ctx *Context) {
+					lineNo := 0
+					for {
+						lineNo++
+						openId := <-openIdChan
+						logs.Log.Warning("got a openid from chan:%v", openId)
+						theurl := ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + ctx.GetTemp("formhash", "").(string)
+						ctx.AddQueue(&request.Request{
+							Url:  theurl,
+							Rule: "ticket",
+							Header: http.Header{
+								"Cookie":     []string{"hjbox_openid=" + openId},
+								"Referer":    []string{theurl},
+								"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
+							},
+							DownloaderID: 0,
+							Temp: map[string]interface{}{
+								"urlPre":   ctx.GetTemp("urlPre", ""),
+								"vid":      ctx.GetTemp("vid", ""),
+								"zid":      ctx.GetTemp("zid", ""),
+								"openid":   openId,
+								"formhash": ctx.GetTemp("formhash", ""),
+								"linoNo":   lineNo,
+							},
+							Reloadable:  true,
+							ConnTimeout: 5 * time.Second,
+							DialTimeout: 5 * time.Second,
+						})
+					}
+
 				},
 			},
 		},
@@ -485,4 +577,87 @@ func randSlice(a []int) []int {
 		a[r1] = t
 	}
 	return a
+}
+
+func checkFileSize(filename string) (size int64, exist bool) {
+	exist = false
+	finfo, err := os.Stat(filename)
+	if !os.IsNotExist(err) {
+		exist = true
+		size = finfo.Size()
+	}
+	return size, exist
+}
+
+func checkOpenidCached(domain string) bool {
+	fileName := openIdFilePrefix + domain
+	if fsize, fexist := checkFileSize(fileName); fsize > 10 && fexist {
+		return true
+	}
+	return false
+}
+
+// file format : openid,zid\n
+func saveOpenidCache(domain string, openIdMap map[string]string) (ret bool) {
+	fileName := openIdFilePrefix + domain
+	fo, foerr := os.OpenFile(fileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	if foerr != nil {
+		logs.Log.Error("cannot open :%v", foerr)
+		return false
+	}
+	defer fo.Close()
+	for openId, openIdVal := range openIdMap {
+		io.WriteString(fo, openId+","+openIdVal+"\n")
+	}
+
+	return true
+}
+
+// file format : openid,zid\n
+func readOpenidCache(domain string) (openIdMap map[string]string, ret bool) {
+	fileName := openIdFilePrefix + domain
+
+	if !checkOpenidCached(domain) {
+		return openIdMap, false
+	}
+
+	fr, err := os.Open(fileName)
+	defer fr.Close()
+	if err != nil {
+		logs.Log.Error("open file:%v %v", fileName, err)
+		return
+	}
+
+	openIdMap = make(map[string]string, 0)
+
+	br := bufio.NewReader(fr)
+	openIdNum := 0
+
+	for {
+		line, err := br.ReadBytes('\n')
+		line = bytes.TrimSpace(line)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logs.Log.Error("cannot read file:%v %v", fileName, err)
+			break
+		}
+
+		commaPos := bytes.Index(line, []byte{','})
+		openId := ""
+		openIdVal := ""
+		if commaPos > 0 {
+			openId = string(line[:commaPos])
+			openIdVal = string(line[commaPos+1:])
+			openIdNum++
+		}
+
+		openIdMap[openId] = openIdVal
+	}
+	if openIdNum > 0 {
+		ret = true
+	}
+
+	return openIdMap, ret
 }
