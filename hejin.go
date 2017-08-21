@@ -30,6 +30,7 @@ import (
 	//"fmt"
 	// "math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -68,10 +69,10 @@ var Hejinx = &Spider{
 
 			//ctx.Request is nil, dont use it here
 			param := ctx.GetKeyin()
-			// http://www.vtianmen.com/plugin.php?id=hejin_toupiao&model=top300&vid=1&zid=41#top300
-			rootUrl := `http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20`
+			//`http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20`
+			rootUrl := `http://www.vtianmen.com/plugin.php?id=hejin_toupiao&model=detail&vid=1&zid=41#top300`
 			if len(param) <= 12 {
-				logs.Log.Warning("自定义输入的url参数不正确！ use default")
+				logs.Log.Warning("自定义输入的url参数不正确！ use default: %v", rootUrl)
 				//return
 				param = rootUrl
 			}
@@ -118,7 +119,8 @@ var Hejinx = &Spider{
 			//http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=20
 			urlParsed, _ := url.Parse(param)
 			urlParams, _ := url.ParseQuery(urlParsed.RawQuery)
-			logs.Log.Error("host=%v script=%v query=%v", urlParsed.Host, urlParsed.Path, urlParsed.RawPath)
+			logs.Log.Warning("host=%v script=%v query=%v", urlParsed.Host, urlParsed.Path, urlParsed.RawPath)
+
 			urlModel, modelExist := urlParams["model"]
 			if !modelExist || len(urlModel) == 0 {
 				logs.Log.Error("不是有效的url,model not exist,有效的url应该类似：http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=1")
@@ -134,6 +136,7 @@ var Hejinx = &Spider{
 				logs.Log.Error("不是有效的url,pluginId not exist,有效的url应该类似：http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao&model=detail&zid=1 ")
 				return
 			}
+
 			logs.Log.Warning("pluginId=%v urlModel=%v", pluginId, urlModel)
 			vid, vidExist := urlParams["vid"]
 			if !vidExist || len(vid) == 0 {
@@ -144,7 +147,7 @@ var Hejinx = &Spider{
 			logs.Log.Warning("vid=%v", vid)
 			zid, zidExist := urlParams["zid"]
 			if !zidExist || len(zid) == 0 {
-				logs.Log.Error("没有匹配到要投票的用户 请输入带zid的url")
+				logs.Log.Error("没有匹配到要投票的用户 请输入带zid的url 类似: %v", rootUrl)
 				zid = make([]string, 1)
 				zid[0] = paramZid
 				return
@@ -237,7 +240,7 @@ var Hejinx = &Spider{
 						spanIdx := strings.Index(rankContent, "</span><span>1")
 						uid := 0
 						if spanIdx > 0 {
-							logs.Log.Warning("find a span: %v", string(tempContent[spanIdx:spanIdx+18]))
+							//logs.Log.Warning("find a span: %v", string(tempContent[spanIdx:spanIdx+18]))
 							uid, _ = strconv.Atoi(string(tempContent[spanIdx+14 : spanIdx+18]))
 							tempContent = tempContent[spanIdx+18:]
 							rankContent = string(tempContent)
@@ -254,20 +257,21 @@ var Hejinx = &Spider{
 					randSlice(uids)
 					logs.Log.Warning("uids: len=%d %v", len(uids), uids)
 
-					go ctx.Parse("ticketFromChan")
-
 					// 如果有openidcache则读openidcache，如果没有则下载并保存
 					openIdMap, openIdCacheExist := readOpenidCache(ctx.GetTemp("domain", "").(string))
 					if openIdCacheExist {
 						// use openid for ticket, openidChan<-openId
-						for openId, _ := range openIdMap {
-							logs.Log.Warning("will ticket by chan openid: %v", openId)
-							openIdChan <- openId
-						}
+						go func(oponIdMap map[string]string) {
+							for openId, _ := range openIdMap {
+								logs.Log.Warning("will ticket by chan openid(from file): %v", openId)
+								openIdChan <- openId
+							}
+						}(openIdMap)
 					} else {
 						// download openid, and for ticket, openidChan<-openId
 						for i, uid := range uids {
-							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + strconv.FormatInt(int64(uid), 10)
+							urlZid := strconv.FormatInt(int64(uid), 10)
+							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + urlZid
 							logs.Log.Warning("will dcexcel: %v", url)
 							if i > 10 {
 								break
@@ -288,27 +292,29 @@ var Hejinx = &Spider{
 									"zid":      ctx.GetTemp("zid", ""),
 									"formhash": formhash,
 									"chan":     "1",
+									"domain":   ctx.GetTemp("domain", "").(string),
+									"urlZid":   urlZid,
 								},
 							})
 
 						}
 					}
-					return
 
-					theAction := ctx.GetTemp("theaction", "").(string)
-					switch theAction {
-					case "dcexcel":
-
-						for _, uid := range uids {
-							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + strconv.FormatInt(int64(uid), 10)
-							logs.Log.Warning("will dcexcel: %v", url)
-
+					// waiting for openId read
+					func(ctx *Context) {
+						//return
+						lineNo := 0
+						for {
+							lineNo++
+							openId := <-openIdChan
+							logs.Log.Warning("got a openid from chan:%v lineNo=%d", openId, lineNo)
+							theurl := ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + formhash
 							ctx.AddQueue(&request.Request{
-								Url:  url,
-								Rule: "dcexcel",
+								Url:  theurl,
+								Rule: "ticket",
 								Header: http.Header{
-									"Cookie":     []string{},
-									"Referer":    []string{url},
+									"Cookie":     []string{"hjbox_openid=" + openId},
+									"Referer":    []string{theurl},
 									"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
 								},
 								DownloaderID: 0,
@@ -316,88 +322,18 @@ var Hejinx = &Spider{
 									"urlPre":   ctx.GetTemp("urlPre", ""),
 									"vid":      ctx.GetTemp("vid", ""),
 									"zid":      ctx.GetTemp("zid", ""),
-									"formhash": formhash,
+									"openid":   openId,
+									"formhash": ctx.GetTemp("formhash", ""),
+									"linoNo":   lineNo,
 								},
+								Reloadable:  true,
+								ConnTimeout: 5 * time.Second,
+								DialTimeout: 5 * time.Second,
 							})
-
 						}
-					case "ticket":
-						fileDirPath := ctx.GetTemp("fileDirPath", "").(string)
-						logs.Log.Warning("will open:%v", fileDirPath)
-						fr, err := os.Open(fileDirPath)
-						defer fr.Close()
-						if err != nil {
-							logs.Log.Error("open file:%v %v", fileDirPath, err)
-							return
-						}
+					}(ctx)
 
-						br := bufio.NewReader(fr)
-						openIdNum := 0
-						openIdStartNo := rand.Int() % 10000
-
-						zidTemp := ctx.GetTemp("zid", "32").(string)
-						zids := strings.Split(zidTemp, ",")
-
-						for {
-							line, err := br.ReadString('\n')
-							line = strings.TrimSpace(line)
-							if err == io.EOF {
-								break
-							}
-							if err != nil {
-								logs.Log.Error("cannot read file:%v %v", fileDirPath, err)
-								break
-							}
-
-							commaPos := strings.Index(string(line), ",")
-							openId := ""
-							if commaPos > 0 {
-								line = line[commaPos+1:]
-								commaPos2 := strings.Index(string(line), ",")
-								if commaPos2 > 0 {
-									openId = string(line[:commaPos2])
-								} else {
-									openId = string(line)
-								}
-								if len(openId) > 0 && openId[0] != 'o' {
-									// not valid openid
-									continue
-								}
-
-								openIdNum++
-								if openIdNum < openIdStartNo {
-									continue
-								}
-
-								urlPre := "http://tzxts.lzyjdzsw.com/plugin.php?id=hejin_toupiao"
-								zidTemp = string(zids[openIdNum%len(zids)])
-								theurl := urlPre + "&model=ticket&zid=" + zidTemp + "&formhash=" + formhash
-								ctx.AddQueue(&request.Request{
-									Url:  theurl,
-									Rule: "ticket",
-									Header: http.Header{
-										"Cookie":     []string{"hjbox_openid=" + openId},
-										"Referer":    []string{theurl},
-										"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
-									},
-									DownloaderID: 0,
-									Temp: map[string]interface{}{
-										"urlPre":   urlPre,
-										"vid":      ctx.GetTemp("vid", ""),
-										"zid":      zidTemp,
-										"openid":   openId,
-										"formhash": formhash,
-										"lineNo":   openIdNum,
-									},
-									Reloadable:  true,
-									ConnTimeout: 5 * time.Second,
-									DialTimeout: 5 * time.Second,
-								})
-
-							}
-						}
-						logs.Log.Warning("all ticket:%d", openIdNum)
-					}
+					return
 
 					ctx.SetTemp("uids", uids)
 				},
@@ -416,6 +352,7 @@ var Hejinx = &Spider{
 					openIdMap := map[string]string{}
 					doTicket := false
 					doCopyToChan := ctx.GetTemp("chan", "")
+					urlZid := ctx.GetTemp("urlZid", "").(string)
 
 					if len(text) > 0 {
 						br := bufio.NewReader(strings.NewReader(text))
@@ -426,10 +363,8 @@ var Hejinx = &Spider{
 								break
 							}
 							commaPos := strings.Index(string(a), ",")
-							zid := ""
 							openId := ""
 							if commaPos > 0 {
-								zid = string(a[:commaPos])
 								a = a[commaPos+1:]
 								commaPos2 := strings.Index(string(a), ",")
 								if commaPos2 > 0 {
@@ -443,7 +378,7 @@ var Hejinx = &Spider{
 								}
 
 								if _, oExist := openIdMap[openId]; !oExist {
-									openIdMap[openId] = zid
+									openIdMap[openId] = urlZid
 								}
 								//logs.Log.Warning("got a openid:%v %v", zid, openId)
 
@@ -455,7 +390,7 @@ var Hejinx = &Spider{
 							}
 						}
 
-						logs.Log.Warning("openIdNum=%v len(map)=%v", openIdNum, len(openIdMap))
+						logs.Log.Warning("from dcexcel: zid=%v openIdNum=%v len(map)=%v", urlZid, openIdNum, len(openIdMap))
 						lineNo := 0
 						for openId, zidVal := range openIdMap {
 							lineNo++
@@ -498,6 +433,10 @@ var Hejinx = &Spider{
 								})
 							}
 						}
+
+						fileName, saveOk := saveOpenidCache(ctx.GetTemp("domain", "").(string), openIdMap)
+						logs.Log.Warning("save openIdMap to:%v saveok=%v", fileName, saveOk)
+
 					}
 					return
 				},
@@ -532,11 +471,19 @@ var Hejinx = &Spider{
 			"ticketFromChan": {
 				ParseFunc: func(ctx *Context) {
 					lineNo := 0
-					for {
+					openIdMap, ok := readOpenidCache(ctx.GetTemp("domain", "").(string))
+					if !ok {
+						logs.Log.Error("cannot get openId from cache")
+						return
+					}
+
+					formhash := ctx.GetTemp("formhash", "").(string)
+
+					for openId, _ := range openIdMap {
 						lineNo++
-						openId := <-openIdChan
-						logs.Log.Warning("got a openid from chan:%v", openId)
-						theurl := ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + ctx.GetTemp("formhash", "").(string)
+						//openId := <-openIdChan
+						logs.Log.Warning("got a openid from chan:%v lineNo=%d", openId, lineNo)
+						theurl := ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + formhash
 						ctx.AddQueue(&request.Request{
 							Url:  theurl,
 							Rule: "ticket",
@@ -559,7 +506,6 @@ var Hejinx = &Spider{
 							DialTimeout: 5 * time.Second,
 						})
 					}
-
 				},
 			},
 		},
@@ -598,19 +544,23 @@ func checkOpenidCached(domain string) bool {
 }
 
 // file format : openid,zid\n
-func saveOpenidCache(domain string, openIdMap map[string]string) (ret bool) {
-	fileName := openIdFilePrefix + domain
+func saveOpenidCache(domain string, openIdMap map[string]string) (fileName string, ret bool) {
+	var mu sync.Mutex
+	mu.Lock()
+	defer mu.Unlock()
+
+	fileName = openIdFilePrefix + domain
 	fo, foerr := os.OpenFile(fileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if foerr != nil {
 		logs.Log.Error("cannot open :%v", foerr)
-		return false
+		return fileName, false
 	}
 	defer fo.Close()
 	for openId, openIdVal := range openIdMap {
 		io.WriteString(fo, openId+","+openIdVal+"\n")
 	}
 
-	return true
+	return fileName, true
 }
 
 // file format : openid,zid\n
