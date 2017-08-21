@@ -256,6 +256,7 @@ var Hejinx = &Spider{
 
 					randSlice(uids)
 					logs.Log.Warning("uids: len=%d %v", len(uids), uids)
+					uidStarted := 0
 
 					// 如果有openidcache则读openidcache，如果没有则下载并保存
 					openIdMap, openIdCacheExist := readOpenidCache(ctx.GetTemp("domain", "").(string))
@@ -266,6 +267,7 @@ var Hejinx = &Spider{
 								logs.Log.Warning("will ticket by chan openid(from file): %v", openId)
 								openIdChan <- openId
 							}
+							openIdChan <- "OVER all"
 						}(openIdMap)
 					} else {
 						// download openid, and for ticket, openidChan<-openId
@@ -277,6 +279,7 @@ var Hejinx = &Spider{
 								break
 							}
 
+							uidStarted++
 							ctx.AddQueue(&request.Request{
 								Url:  url,
 								Rule: "dcexcel",
@@ -304,9 +307,26 @@ var Hejinx = &Spider{
 					func(ctx *Context) {
 						//return
 						lineNo := 0
+						overCount := 0
 						for {
 							lineNo++
 							openId := <-openIdChan
+							if openId == "OVER dcexcel" {
+								logs.Log.Warning("a dcexcel over when read chan")
+								overCount++
+								continue
+							}
+
+							if openId == "OVER all" {
+								logs.Log.Warning("all openid over when read chan")
+								break
+							}
+
+							if uidStarted > 0 && overCount >= uidStarted {
+								logs.Log.Warning("all dcexcel over when read chan")
+								break
+							}
+
 							logs.Log.Warning("got a openid from chan:%v lineNo=%d", openId, lineNo)
 							theurl := ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + formhash
 							ctx.AddQueue(&request.Request{
@@ -331,6 +351,7 @@ var Hejinx = &Spider{
 								DialTimeout: 5 * time.Second,
 							})
 						}
+						logs.Log.Warning("waiting for openid done, linoNo=%d", lineNo)
 					}(ctx)
 
 					return
@@ -380,17 +401,13 @@ var Hejinx = &Spider{
 								if _, oExist := openIdMap[openId]; !oExist {
 									openIdMap[openId] = urlZid
 								}
-								//logs.Log.Warning("got a openid:%v %v", zid, openId)
-
-								// 中间被停止
-								//time.Sleep(time.Second * 3)
 							}
 							if openIdNum > 10 {
 								break
 							}
 						}
 
-						logs.Log.Warning("from dcexcel: zid=%v openIdNum=%v len(map)=%v", urlZid, openIdNum, len(openIdMap))
+						logs.Log.Warning("when dcexcel: zid=%v openIdNum=%v len(map)=%v", urlZid, openIdNum, len(openIdMap))
 						lineNo := 0
 						for openId, zidVal := range openIdMap {
 							lineNo++
@@ -400,44 +417,19 @@ var Hejinx = &Spider{
 							}
 							ctx.Output(rowRet)
 
-							//io.WriteString(fo, zidVal+","+openId+"\n")
 							if doCopyToChan == "1" {
-								logs.Log.Warning("will do ticket by chan openid:%v", openId)
+								//logs.Log.Warning("will do ticket by chan openid:%v", openId)
 								openIdChan <- openId
 							}
-							continue
 
-							if doTicket {
-								// start ticket
-								url = ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + ctx.GetTemp("formhash", "").(string)
-								ctx.AddQueue(&request.Request{
-									Url:  url,
-									Rule: "ticket",
-									Header: http.Header{
-										"Cookie":     []string{"hjbox_openid=" + ctx.GetTemp("openid", "").(string)},
-										"Referer":    []string{url},
-										"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
-									},
-									DownloaderID: 0,
-									Temp: map[string]interface{}{
-										"urlPre":   ctx.GetTemp("urlPre", ""),
-										"vid":      ctx.GetTemp("vid", ""),
-										"zid":      ctx.GetTemp("zid", ""),
-										"openid":   openId,
-										"formhash": ctx.GetTemp("formhash", ""),
-										"linoNo":   lineNo,
-									},
-									Reloadable:  true,
-									ConnTimeout: 5 * time.Second,
-									DialTimeout: 5 * time.Second,
-								})
-							}
 						}
 
 						fileName, saveOk := saveOpenidCache(ctx.GetTemp("domain", "").(string), openIdMap)
-						logs.Log.Warning("save openIdMap to:%v saveok=%v", fileName, saveOk)
+						logs.Log.Warning("save openIdMap to:%v saveok=%v saveNum=%v zid=%v", fileName, saveOk, len(openIdMap), urlZid)
 
 					}
+
+					openIdChan <- "OVER dcexcel"
 					return
 				},
 			},
@@ -466,46 +458,6 @@ var Hejinx = &Spider{
 					// 结果输出
 					ctx.Output(rowRet)
 					//ctx.FileOutput([]string{"filecache"})
-				},
-			},
-			"ticketFromChan": {
-				ParseFunc: func(ctx *Context) {
-					lineNo := 0
-					openIdMap, ok := readOpenidCache(ctx.GetTemp("domain", "").(string))
-					if !ok {
-						logs.Log.Error("cannot get openId from cache")
-						return
-					}
-
-					formhash := ctx.GetTemp("formhash", "").(string)
-
-					for openId, _ := range openIdMap {
-						lineNo++
-						//openId := <-openIdChan
-						logs.Log.Warning("got a openid from chan:%v lineNo=%d", openId, lineNo)
-						theurl := ctx.GetTemp("urlPre", "").(string) + "&model=ticket&zid=" + ctx.GetTemp("zid", "").(string) + "&formhash=" + formhash
-						ctx.AddQueue(&request.Request{
-							Url:  theurl,
-							Rule: "ticket",
-							Header: http.Header{
-								"Cookie":     []string{"hjbox_openid=" + openId},
-								"Referer":    []string{theurl},
-								"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
-							},
-							DownloaderID: 0,
-							Temp: map[string]interface{}{
-								"urlPre":   ctx.GetTemp("urlPre", ""),
-								"vid":      ctx.GetTemp("vid", ""),
-								"zid":      ctx.GetTemp("zid", ""),
-								"openid":   openId,
-								"formhash": ctx.GetTemp("formhash", ""),
-								"linoNo":   lineNo,
-							},
-							Reloadable:  true,
-							ConnTimeout: 5 * time.Second,
-							DialTimeout: 5 * time.Second,
-						})
-					}
 				},
 			},
 		},
