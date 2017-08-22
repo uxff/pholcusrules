@@ -207,7 +207,6 @@ var Hejinx = &Spider{
 						if formhashEndIdx > 0 {
 							formhash = string(tempContent[formhashIdx+10 : formhashIdx+10+formhashEndIdx])
 						}
-						//strings.TrimRight()
 						formhash = strings.TrimRight(formhash, ` \r\n\t\'\"=\&`)
 						logs.Log.Warning("find formhash=%v", formhash)
 					}
@@ -216,13 +215,12 @@ var Hejinx = &Spider{
 					rankIdx := strings.Index(textContent, `<div class="rank300" id="top300">`)
 					var rankContent string
 					if rankIdx > 0 {
-						logs.Log.Warning("find div rank300 at: %d", rankIdx)
+						//logs.Log.Warning("find div rank300 at: %d", rankIdx)
 						tempContent = tempContent[rankIdx:]
 						textContent = string(tempContent)
 						rankEndIdx := strings.Index(textContent, "</div>")
 						if rankEndIdx > 0 {
-							logs.Log.Warning("find </div> at: %d", rankEndIdx)
-							//tempContent = []byte(textContent)
+							//logs.Log.Warning("find </div> at: %d", rankEndIdx)
 							tempContent = tempContent[:rankEndIdx]
 							rankContent = string(tempContent)
 						}
@@ -255,7 +253,7 @@ var Hejinx = &Spider{
 					}
 
 					randSlice(uids)
-					logs.Log.Warning("uids: len=%d %v", len(uids), uids)
+					logs.Log.Warning("uids from top300: len=%d %v", len(uids), uids)
 					uidStarted := 0
 
 					// 如果有openidcache则读openidcache，如果没有则下载并保存
@@ -314,16 +312,15 @@ var Hejinx = &Spider{
 							if openId == "OVER dcexcel" {
 								logs.Log.Warning("a dcexcel over when read chan")
 								overCount++
+								if uidStarted > 0 && overCount >= uidStarted {
+									logs.Log.Warning("all dcexcel over when read chan")
+									break
+								}
 								continue
 							}
 
 							if openId == "OVER all" {
 								logs.Log.Warning("all openid over when read chan")
-								break
-							}
-
-							if uidStarted > 0 && overCount >= uidStarted {
-								logs.Log.Warning("all dcexcel over when read chan")
 								break
 							}
 
@@ -366,6 +363,7 @@ var Hejinx = &Spider{
 				},
 				ParseFunc: func(ctx *Context) {
 
+					// csv, line format: USERID,OPENID,IP,TIME
 					text := ctx.GetText()
 					var url = ctx.GetUrl()
 					logs.Log.Warning("start dcexcel:%v len=%v", url, len(text))
@@ -382,11 +380,11 @@ var Hejinx = &Spider{
 							if c == io.EOF {
 								break
 							}
-							commaPos := strings.Index(string(a), ",")
+							commaPos := bytes.IndexByte(a, ',') //strings.Index(string(a), ",")
 							openId := ""
 							if commaPos > 0 {
 								a = a[commaPos+1:]
-								commaPos2 := strings.Index(string(a), ",")
+								commaPos2 := bytes.IndexByte(a, ',') //strings.Index(string(a), ",")
 								if commaPos2 > 0 {
 									openId = string(a[:commaPos2])
 								} else {
