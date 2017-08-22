@@ -371,7 +371,6 @@ var Hejinx = &Spider{
 					logs.Log.Warning("start dcexcel:%v len=%v", url, len(text))
 					openIdNum := 0
 					openIdMap := map[string]string{}
-					doTicket := false
 					doCopyToChan := ctx.GetTemp("chan", "")
 					urlZid := ctx.GetTemp("urlZid", "").(string)
 
