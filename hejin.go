@@ -233,6 +233,7 @@ var Hejinx = &Spider{
 
 					// 因为该网站的代码比较垃圾 编码混乱，gb2312和utf8混排，导致goquery无法解析，只能手动
 					var uids []int
+					maxUid := 0
 					tempContent = []byte(rankContent)
 					for {
 						spanIdx := strings.Index(rankContent, "</span><span>1")
@@ -244,6 +245,9 @@ var Hejinx = &Spider{
 							rankContent = string(tempContent)
 
 							if uid > 0 {
+								if uid > maxUid {
+									maxUid = uid
+								}
 								uids = append(uids, uid)
 							}
 
@@ -269,13 +273,14 @@ var Hejinx = &Spider{
 						}(openIdMap)
 					} else {
 						// download openid, and for ticket, openidChan<-openId
-						for i, uid := range uids {
+
+						for uid := 1; uid <= maxUid; uid++ {
 							urlZid := strconv.FormatInt(int64(uid), 10)
 							url := ctx.GetTemp("urlPre", "").(string) + "&model=dcexcel&zid=" + urlZid
 							logs.Log.Warning("will dcexcel: %v", url)
-							if i > 10 {
-								break
-							}
+							//if i > 10 {
+							//break
+							//}
 
 							uidStarted++
 							ctx.AddQueue(&request.Request{
