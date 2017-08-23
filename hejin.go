@@ -443,13 +443,11 @@ var Hejinx = &Spider{
 				},
 				ParseFunc: func(ctx *Context) {
 					text := ctx.GetText()
-					status := []byte(text)[:16]
 					zid := ctx.GetTemp("zid", "")
 					openId := ctx.GetTemp("openid", "")
 					lineNo := ctx.GetTemp("lineNo", 1)
-
-					statusDesc, statusExist := VoteStatus[strings.TrimSpace(string(status))]
-					logs.Log.Warning("TICKET for %v openid=%v %v len(text)=%v status=%s %v %v", zid, openId, lineNo, len(text), string(status), statusDesc, statusExist)
+					statusDesc, statusExist := VoteStatus[text]
+					logs.Log.Warning("TICKET for %v openid=%v %v len(text)=%v status=%s %v", zid, openId, lineNo, len(text), statusDesc, statusExist)
 
 					rowRet := map[int]interface{}{
 						0: zid,
