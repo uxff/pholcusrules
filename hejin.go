@@ -355,10 +355,6 @@ var Hejinx = &Spider{
 						}
 						logs.Log.Warning("waiting for openid done, linoNo=%d", lineNo)
 					}(ctx)
-
-					return
-
-					ctx.SetTemp("uids", uids)
 				},
 			},
 			"dcexcel": {
