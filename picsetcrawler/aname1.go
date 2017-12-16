@@ -37,16 +37,25 @@ func init() {
 }
 
 var Aname1 = &Spider{
-	Name:        "highasianporn.com",
-	Description: "[Auto Page] [highasianporn.com]",
-	// Pausetime: 300,
-	// Keyin:   KEYIN,
-	// Limit:        LIMIT,
-	EnableCookie: false,
+	Name:         "ANAME1",
+	Description:  "[Auto Page] [highasianporn.com]",
+	Pausetime:    300,
+	Keyin:        KEYIN,
+	Limit:        LIMIT,
+	EnableCookie: true,
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
+
+			entranceUrl := HOME_URL
+			keyIn := ctx.GetKeyin()
+			if len(keyIn) > 4 {
+				entranceUrl = keyIn
+			}
+
+			logs.Log.Warning("start with url:%v", entranceUrl)
+
 			ctx.AddQueue(&request.Request{
-				Url:  HOME_URL,
+				Url:  entranceUrl,
 				Rule: "PICSETLIST",
 				Header: http.Header{
 					"Cookie":     []string{PUBLIC_COOKIE},
@@ -124,6 +133,9 @@ var Aname1 = &Spider{
 
 							logs.Log.Warning("cookie=%s ", cookies)
 							cookies = "25a6da5acf7fde759f79e8c23ab0dc76d53f8=cGxmUnIwNWQ1T3JvTVRVeE16QTVNamsyTlMwd0xTRXcb; f6d9f67e5f2c5b9dd954e79d40588261f042e31abda5d=bkpHaHAwMU1ZV0U0TlRsbFpqRmlaREF4TTJaa1pXVXlORFZpTlRRd01ETXhNamRqWkRNPQc; 9353eb=1513092965; _ga=GA1.2.1711782959.1513095156; _gid=GA1.2.1692799327.1513095156; 34843e6d0d96c28940bc888267e9b3=ekxwRzExN1FTRVpoVXVuRHlKV3VMOTB1ZERRNU9UUTVPQT09a; 073273c2a4e3c0d936022720d=SzZlRE4xNlZCdk00QUdleWQ5NlVHMWVNaTB3a; 9353e=bm9yZWZ8fGRlZmF1bHR8MXwyfDJ8bm9uZXwwOmpwZ3JhdnVyZS5jb20%3D; __atuvc=3%7C50; __atuvs=5a2fffe7e5348de2002"
+
+							logs.Log.Warning("will request: %v", url)
+
 							// queue request the picset detail
 							ctx.AddQueue(
 								&request.Request{
@@ -176,7 +188,8 @@ var Aname1 = &Spider{
 						})
 					})
 
-					logs.Log.Warning("the res.len=%v status=%v header=%v", ctx.GetResponse().ContentLength, ctx.GetResponse().Status, ctx.GetResponse().Header)
+					logs.Log.Warning("the res.len=%v status=%v header=%v content=%v", ctx.GetResponse().ContentLength, ctx.GetResponse().Status, ctx.GetResponse().Header, ctx.GetResponse().Body)
+
 				},
 			},
 		},
