@@ -14,7 +14,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
+	//"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -86,7 +86,7 @@ var Aname1 = &Spider{
 					lis := query.Find(".thumb") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 10 {
-							return
+							//return
 						}
 
 						url, _ := s.Find("a").Attr("href")
@@ -136,7 +136,7 @@ var Aname1 = &Spider{
 								cookies += c.Name + "=" + c.Value + "; "
 							}
 
-							logs.Log.Warning("cookie=%s ", cookies)
+							//logs.Log.Warning("cookie=%s ", cookies)
 							//cookies = "25a6da5acf7fde759f79e8c23ab0dc76d53f8=cGxmUnIwNWQ1T3JvTVRVeE16QTVNamsyTlMwd0xTRXcb; f6d9f67e5f2c5b9dd954e79d40588261f042e31abda5d=bkpHaHAwMU1ZV0U0TlRsbFpqRmlaREF4TTJaa1pXVXlORFZpTlRRd01ETXhNamRqWkRNPQc; 9353eb=1513092965; _ga=GA1.2.1711782959.1513095156; _gid=GA1.2.1692799327.1513095156; 34843e6d0d96c28940bc888267e9b3=ekxwRzExN1FTRVpoVXVuRHlKV3VMOTB1ZERRNU9UUTVPQT09a; 073273c2a4e3c0d936022720d=SzZlRE4xNlZCdk00QUdleWQ5NlVHMWVNaTB3a; 9353e=bm9yZWZ8fGRlZmF1bHR8MXwyfDJ8bm9uZXwwOmpwZ3JhdnVyZS5jb20%3D; __atuvc=3%7C50; __atuvs=5a2fffe7e5348de2002"
 
 							logs.Log.Warning("will request: %v", url)
@@ -149,7 +149,7 @@ var Aname1 = &Spider{
 									Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + picsetName, "PICSETNAME": picsetName},
 									Header: http.Header{
 										//"Accept-Language":           []string{"zh-CN,zh"},
-										//"Cookie":                    []string{cookies},
+										"Cookie":                    []string{cookies},
 										"User-Agent":                []string{PUBLIC_AGENT},
 										"Referer":                   []string{HOME_URL},
 										"Upgrade-Insecure-Requests": []string{"1"},
@@ -193,12 +193,7 @@ var Aname1 = &Spider{
 						})
 					})
 
-					body, err := ioutil.ReadAll(ctx.Response.Body)
-					if err != nil {
-						logs.Log.Warning("read body error:%v", err)
-					}
-
-					logs.Log.Warning("the res.len=%v status=%v header=%v content=%v", ctx.GetResponse().ContentLength, ctx.GetResponse().Status, ctx.GetResponse().Header, string(body))
+					logs.Log.Warning("the res.len=%v status=%v header=%v", ctx.GetResponse().ContentLength, ctx.GetResponse().Status, ctx.GetResponse().Header)
 				},
 			},
 		},
