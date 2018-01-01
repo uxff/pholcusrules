@@ -67,37 +67,16 @@ var Wx100000p = &Spider{
 
 				},
 			},
-			"文章列表": {
-				ParseFunc: func(ctx *Context) {
-					query := ctx.GetDom()
-					//#journalcol1 article table tbody tr td:eq(1) table:eq(1) a
-					query.Find("#journalcol1 article table tbody tr td").Each(func(i int, td *goquery.Selection) {
-						if i == 1 {
-							td.Find("table").Each(func(j int, table *goquery.Selection) {
-								if j == 1 {
-									table.Find("a").Each(func(k int, a *goquery.Selection) {
-										if k%2 == 0 {
-											if url, ok := a.Attr("href"); ok {
-												// log.Print(url)
-												ctx.AddQueue(&request.Request{Url: url, Rule: "文章页"})
-											}
-										}
-									})
-								}
-							})
-						}
-					})
-				},
-			},
 			"DETAIL": {
 				//注意：有无字段语义和是否输出数据必须保持一致
 				ItemFields: []string{
 					"Title",
 					"Author",
-					"Addresses",
+					"Thumb",
 					"Time",
 					"Abstract",
 					"Keywords",
+					"Content",
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
@@ -145,6 +124,7 @@ var Wx100000p = &Spider{
 						3: journal,
 						4: abstract,
 						5: keywords,
+						6: content,
 					})
 				},
 			},
