@@ -86,7 +86,7 @@ var Aname1 = &Spider{
 					lis := query.Find(".thumb") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 10 {
-							//return
+							return
 						}
 
 						url, _ := s.Find("a").Attr("href")

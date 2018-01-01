@@ -20,6 +20,7 @@ import (
 	_ "github.com/uxff/pholcusrules/picsetcrawler"
 	_ "github.com/uxff/pholcusrules/qzone"
 	_ "github.com/uxff/pholcusrules/vote"
+	_ "github.com/uxff/pholcusrules/wx100000p"
 )
 
 var (
