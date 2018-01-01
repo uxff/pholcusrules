@@ -49,6 +49,9 @@ var Wx100000p = &Spider{
 			ctx.AddQueue(&request.Request{
 				Url:  HOME_URL,
 				Rule: "TIMELINE",
+				Header: http.Header{
+					"User-Agent": []string{PUBLIC_AGENT},
+				},
 			})
 		},
 
@@ -60,8 +63,9 @@ var Wx100000p = &Spider{
 						a := s.Find("a")
 						if url, ok := a.Attr("href"); ok {
 							// log.Print(url)
+							p := a.Find("p")
 
-							ctx.AddQueue(&request.Request{Url: HOME_URL + url, Rule: "DETAIL", Header: http.Header{"Referer": []string{HOME_URL}, "User-Agent": []string{PUBLIC_AGENT}}})
+							ctx.AddQueue(&request.Request{Url: HOME_URL + url, Rule: "DETAIL", Header: http.Header{"Referer": []string{HOME_URL}, "User-Agent": []string{PUBLIC_AGENT}}, Temp: request.Temp{"abstract": p.Text()}})
 						}
 					})
 
@@ -106,7 +110,7 @@ var Wx100000p = &Spider{
 					// Time
 					// Abstract
 					author := ""
-					abstract := ""
+					abstract := ctx.GetTemp("abstract", "").(string)
 					//re, _ = regexp.Compile("Abstract:(.*?)Keywords:")
 					journal := query.Find(".entry-date").Text() //re.FindStringSubmatch(content)[1]
 					// Keywords
