@@ -19,7 +19,7 @@ import (
 	// "encoding/json"
 
 	// 字符串处理包
-	"regexp"
+	//"regexp"
 	//"strconv"
 	"strings"
 	// 其他包
@@ -88,12 +88,14 @@ var Wx100000p = &Spider{
 					content, _ := query.Find(".entry-content").Html()
 
 					// 过滤标签
-					re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
-					content = re.ReplaceAllString(content, "")
+					//re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
+					//contentText := re.ReplaceAllString(content, "")
+					// 内容中如果图片不是
 
 					// Title
 					title := query.Find(".entry-title").Text()
 					// Author
+
 					// Addresses & Address
 					addresses, ok := query.Find(".post-cover-title-image").Attr("style")
 					if ok {
@@ -107,12 +109,14 @@ var Wx100000p = &Spider{
 						}
 
 					}
+
 					// Time
+					pubtime := query.Find(".entry-date").Text()
+
 					// Abstract
 					author := ""
 					abstract := ctx.GetTemp("abstract", "").(string)
-					//re, _ = regexp.Compile("Abstract:(.*?)Keywords:")
-					journal := query.Find(".entry-date").Text() //re.FindStringSubmatch(content)[1]
+
 					// Keywords
 					keywords := ""
 
@@ -120,12 +124,14 @@ var Wx100000p = &Spider{
 						keywords = keywords + "," + q.Text()
 					})
 
+					// 输出到
+
 					// 结果存入Response中转
 					ctx.Output(map[int]interface{}{
 						0: title,
 						1: author,
 						2: addresses,
-						3: journal,
+						3: pubtime,
 						4: abstract,
 						5: keywords,
 						6: content,
