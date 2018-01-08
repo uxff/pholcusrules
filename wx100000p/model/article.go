@@ -1,0 +1,168 @@
+package model
+
+import xorm "github.com/go-xorm/xorm"
+import core "github.com/go-xorm/core"
+
+//import _ "github.com/mattn/go-sqlite3"
+import h "github.com/m3ng9i/go-utils/http"
+
+//import "crypto/md5"
+import "time"
+import _ "github.com/go-sql-driver/mysql"
+import "fmt"
+
+var Orm *xorm.Engine
+var OrmEngine string
+var OrmDB string
+var NormalFetcher *h.Fetcher
+
+
+var MysqlConnectionStr string
+
+type ArticleWriter interface{}
+
+func (this*ArticleWriter) Writer(buf []bytes) (n int, err error) {
+    // json unmarshal from buf to entities
+    // open session
+    // write in
+}
+
+func (this*ArticleWriter) Close() error {
+    //Orm.CloseSession()
+}
+
+
+func FetchUrl(url string) (feed *Feed, items []*ArticleEntity, err error) {
+
+	headers := make(map[string]string)
+	headers["User-Agent"] = "Mozilla/5.0(Macintosh;U;IntelMacOSX10_6_8;en-us)AppleWebKit/534.50(KHTML,likeGecko)Version/5.1Safari/534.50" //fmt.Sprintf("QReader %s (%s)", Version.Version, Github)
+
+	NormalFetcher = h.NewFetcher(nil, headers)
+
+	feed, items, err = fetchFeed(url, NormalFetcher)
+	if err != nil {
+		fmt.Println("feed error:", err)
+		return
+	}
+
+	return
+}
+
+func fetchFeed(url string, fetcher *h.Fetcher) (feed *Feed, items []*ArticleEntity, err error) {
+	fd, err := feedreader.Fetch(url, fetcher)
+	if err != nil {
+		return
+	}
+
+	feed, items = assembleFeed(fd)
+	return
+}
+
+func assembleFeed(fd *feedreader.Feed) (feed *Feed, items []*ArticleEntity) {
+
+	now := time.Now()
+
+	feed = new(Feed)
+	feed.Name = fd.Title
+	feed.FeedUrl = fd.FeedLink
+	feed.Url = fd.Link
+	feed.Desc = fd.Description
+	feed.Type = fd.Type
+	feed.LastFetch = now
+
+	for _, i := range fd.Items {
+		// save as article
+		var item = new(ArticleEntity)
+
+		if i.Author != nil {
+			item.Remark = i.Author.Name
+		}
+
+		item.Outer_url = i.Link
+		//item.Guid = i.Guid
+		item.Title = i.Title
+		item.Content = i.Content
+		rs := []rune(i.Content)
+		item.Abstract = string(rs[:200])
+		item.Create_time = now
+		item.Last_modified = now
+		item.Status = 2
+		if len(i.ImgLinks) > 0 {
+			item.Surface_url = *i.ImgLinks[0]
+		}
+
+		item.Pubdate = i.PubDate
+		/*
+			item.Last_modified = i.PubDate
+			if item.Last_modified.IsZero() {
+				item.Last_modified = i.Updated
+			}
+			h := md5.New()
+			fmt.Fprint(h, item.Content)
+			//item.Hash = fmt.Sprintf("%x", h.Sum(nil))
+
+		*/
+		items = append(items, item)
+	}
+
+	return
+}
+
+func SaveArticles(items []*ArticleEntity, origin string) (succNum int) {
+	var err error
+	succNum = 0
+
+	OrmDB = "gofeed"
+	selectedEngine := "mysql"
+	if selectedEngine == "mysql" {
+		Orm, err = xorm.NewEngine("mysql", "www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
+		//} else if selectedEngine == "sqlite3" {
+		//	Orm, err = xorm.NewEngine("sqlite3", OrmDB)
+	}
+	if err != nil {
+		fmt.Println("orm init error:", err)
+		return
+	}
+	Orm.SetMapper(core.SameMapper{})
+
+	//session := Orm.NewSession()
+	for _, item := range items {
+
+		item.Origin = origin
+
+		_, e := Orm.Insert(item)
+		if e != nil {
+			fmt.Println("insert Article error:", e)
+			continue
+		}
+		//fmt.Println("insert success: num=", num, "all=", succNum, "id=", item.Id)
+
+		// save as hot article, so show
+		hotItem := new(HotArticleEntity)
+		hotItem.Title = item.Title
+		hotItem.Is_local_url = 1
+		hotItem.Status = 2
+		hotItem.Surface_url = item.Surface_url
+		hotItem.Create_time = item.Create_time
+		hotItem.Last_modified = item.Last_modified
+		hotItem.Admin_id = item.Admin_id
+		hotItem.Admin_name = item.Admin_name + "(gohead)"
+		hotItem.Url = MakeArticleUrl(item)
+
+		_, e = Orm.Insert(hotItem)
+		if e != nil {
+			fmt.Println("insert hotArticle error:", e)
+			continue
+		}
+
+		succNum++
+	}
+	return
+}
+
+func MakeArticleUrl(a *ArticleEntity) string {
+	//strings.a.Id
+	sign := "ignorethisstrings"
+	str := "http://xahoo.xenith.top/index.php?r=article/show&id=" + fmt.Sprintf("%d", a.Id) + "&sign=" + sign
+	return str
+}
