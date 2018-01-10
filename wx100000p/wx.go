@@ -9,6 +9,7 @@ import (
 	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
 	// "github.com/henrylee2cn/pholcus/logs"         //信息输出
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
+    _ "github.com/uxff/pholcusrules/wx100000p/model"
 
 	// net包
 	"net/http" //设置http.Header
