@@ -8,7 +8,7 @@ import core "github.com/go-xorm/core"
 
 //import "crypto/md5"
 //import "time"
-import _ "github.com/go-sql-driver/mysql"
+//import _ "github.com/go-sql-driver/mysql"
 import "fmt"
 import "encoding/json"
 

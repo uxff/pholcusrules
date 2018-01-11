@@ -7,9 +7,9 @@ import (
 	"github.com/henrylee2cn/pholcus/app/downloader/request" //必需
 	. "github.com/henrylee2cn/pholcus/app/spider"           //必需
 	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
-	// "github.com/henrylee2cn/pholcus/logs"         //信息输出
+	"github.com/henrylee2cn/pholcus/logs"         //信息输出
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
-    _ "github.com/uxff/pholcusrules/wx100000p/model"
+    wxmodel "github.com/uxff/pholcusrules/wx100000p/model"
 
 	// net包
 	"net/http" //设置http.Header
@@ -17,7 +17,7 @@ import (
 
 	// 编码包
 	// "encoding/xml"
-	// "encoding/json"
+	"encoding/json"
 
 	// 字符串处理包
 	//"regexp"
@@ -125,7 +125,29 @@ var Wx100000p = &Spider{
 						keywords = keywords + "," + q.Text()
 					})
 
-					// 输出到
+					// 输出到mysql
+                    artInfo := map[string]string{
+                        "title": title,
+                        "author": author,
+                        "outer_url": addresses,
+                        //"pubdate": pubtime,
+                        "origin": "wx100000p",
+                        "remark": keywords,
+                        "abstract": abstract,
+                        "content": content,
+                    }
+
+                    buf, err := json.Marshal([]map[string]string{artInfo})
+                    if err != nil {
+                        logs.Log.Warning("json marshal error:%v", err)
+                    }
+
+                    writer := &wxmodel.ArticleWriter{}
+
+                    _, err = writer.Write(buf)
+                    if err != nil {
+                        logs.Log.Warning("write wx100000p to mysql error:%v", err)
+                    }
 
 					// 结果存入Response中转
 					ctx.Output(map[int]interface{}{
