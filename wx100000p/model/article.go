@@ -49,7 +49,7 @@ func init() {
 
     var err error
 
-	OrmDB = "gofeed"
+	OrmDB = "xahoo"
 
     Orm, err = xorm.NewEngine("mysql", MysqlConnectionStr) //"www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
 	if err != nil {

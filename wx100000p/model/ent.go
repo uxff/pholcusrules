@@ -17,15 +17,15 @@ type ArticleEntity struct {
 	Share_count   int       `json:"share_count" xorm:"not null"`
 	Favor_count   int       `json:"favor_count" xorm:"not null"`
 	Comment_count int       `json:"comment_count" xorm:"not null"`
-	Pubdate       time.Time `json:"pubdate"     xorm:"not null"`
-	Create_time   time.Time `json:"create_time"   xorm:"not null"`
-	Last_modified time.Time `json:"last_modified" xorm:"not null"`
-	Admin_id      int       `json:"admin_id"   xorm:"not null"`
+	Pubdate       time.Time `json:"pubdate"     xorm:"not null default '0000-00-00 00:00:00'"`
+	Create_time   time.Time `json:"create_time"   xorm:"not null default '0000-00-00 00:00:00'"`
+	Last_modified time.Time `json:"last_modified" xorm:"not null default '0000-00-00 00:00:00'"`
+	Admin_id      int       `json:"admin_id"   xorm:"not null default '1'"`
 	Admin_name    string    `json:"admin_name" xorm:"not null default ''"`
 	Origin        string    `json:"origin"     xorm:"not null default ''"`
 }
 
-func (this *ArticleEntity) TableName() string {
+func (this ArticleEntity) TableName() string {
 	return "fh_article"
 }
 
@@ -45,7 +45,7 @@ type HotArticleEntity struct {
 	Admin_name    string    `json:"admin_name" xorm:"not null default ''"`
 }
 
-func (this *HotArticleEntity) TableName() string {
+func (this HotArticleEntity) TableName() string {
 	return "fh_hot_article"
 }
 
