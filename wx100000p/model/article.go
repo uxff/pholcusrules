@@ -7,7 +7,8 @@ import core "github.com/go-xorm/core"
 //import h "github.com/m3ng9i/go-utils/http"
 
 //import "crypto/md5"
-//import "time"
+import "time"
+
 //import _ "github.com/go-sql-driver/mysql"
 import "fmt"
 import "encoding/json"
@@ -18,40 +19,47 @@ var OrmDB string
 
 //var NormalFetcher *h.Fetcher
 
-
 var MysqlConnectionStr string = "www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8"
-
 
 type ArticleWriter struct{}
 
 func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
-    // json unmarshal from buf to entities
+	// json unmarshal from buf to entities
 
-    var aList []ArticleEntity
-    err = json.Unmarshal(buf, &aList)
-    if err != nil {
-        return -1, err
-    }
+	var aList []ArticleEntity
+	err = json.Unmarshal(buf, &aList)
+	if err != nil {
+		return -1, err
+	}
 
-    SaveArticles(aList, "36kr")
+	for _, item := range aList {
+		if item.Create_time.IsZero() {
+			item.Create_time = time.Now()
+		}
+		if item.Pubdate.IsZero() {
+			item.Pubdate.AddDate(2017, 1, 1)
+		}
+	}
 
-    // open session
-    // write in
-    return len(buf), nil
+	SaveArticles(aList, "36kr")
+
+	// open session
+	// write in
+	return len(buf), nil
 }
 
-func (this*ArticleWriter) Close() error {
-    //Orm.CloseSession()
-    return nil
+func (this *ArticleWriter) Close() error {
+	//Orm.CloseSession()
+	return nil
 }
 
 func init() {
 
-    var err error
+	var err error
 
 	OrmDB = "xahoo"
 
-    Orm, err = xorm.NewEngine("mysql", MysqlConnectionStr) //"www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
+	Orm, err = xorm.NewEngine("mysql", MysqlConnectionStr) //"www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
 	if err != nil {
 		fmt.Println("orm init error:", err)
 		return
@@ -59,10 +67,8 @@ func init() {
 	Orm.SetMapper(core.SameMapper{})
 }
 
-
 func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error) {
 	succNum = 0
-
 
 	//session := Orm.NewSession()
 	for _, item := range items {
@@ -97,7 +103,7 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 		succNum++
 	}
 
-    fmt.Println("all", succNum, "saved")
+	fmt.Println("all", succNum, "saved")
 	return
 }
 
