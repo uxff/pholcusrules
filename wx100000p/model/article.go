@@ -33,15 +33,14 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	}
 
 	for _, item := range aList {
-		if item.Create_time.IsZero() {
-			item.Create_time = time.Now()
-		}
+	    item.Create_time = time.Now()
+		
 		if item.Pubdate.IsZero() {
 			item.Pubdate = time.Now()
 		}
 	}
 
-	SaveArticles(aList, "36kr")
+	SaveArticles(aList, "wx100000p")
 
 	// open session
 	// write in
