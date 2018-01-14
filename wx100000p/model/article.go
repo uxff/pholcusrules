@@ -37,7 +37,7 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 			item.Create_time = time.Now()
 		}
 		if item.Pubdate.IsZero() {
-			item.Pubdate.AddDate(2017, 1, 1)
+			item.Pubdate = time.Now()
 		}
 	}
 
