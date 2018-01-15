@@ -3,15 +3,21 @@ package model
 import xorm "github.com/go-xorm/xorm"
 import core "github.com/go-xorm/core"
 
-//import _ "github.com/mattn/go-sqlite3"
-//import h "github.com/m3ng9i/go-utils/http"
+import (
 
-//import "crypto/md5"
-import "time"
+	// _ "github.com/mattn/go-sqlite3"
+	// h "github.com/m3ng9i/go-utils/http"
 
-//import _ "github.com/go-sql-driver/mysql"
-import "fmt"
-import "encoding/json"
+	// "crypto/md5"
+	"time"
+
+	//_ "github.com/go-sql-driver/mysql"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/henrylee2cn/pholcus/logs" //信息输出
+)
 
 var Orm *xorm.Engine
 var OrmEngine string
@@ -33,8 +39,8 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	}
 
 	for i, _ := range aList {
-	    aList[i].Create_time = time.Now()
-		
+		aList[i].Create_time = time.Now()
+
 		if aList[i].Pubdate.IsZero() {
 			aList[i].Pubdate = time.Now()
 		}
@@ -60,7 +66,7 @@ func init() {
 
 	Orm, err = xorm.NewEngine("mysql", MysqlConnectionStr) //"www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
 	if err != nil {
-		fmt.Println("orm init error:", err)
+		logs.Log.Error("orm init error:%v", err)
 		return
 	}
 	Orm.SetMapper(core.SameMapper{})
@@ -74,13 +80,25 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 
 		item.Origin = origin
 
+		if len(strings.Trim(item.Content, " \t\r\n")) == 0 {
+			logs.Log.Warning("empty content for save:%v", item.Outer_url)
+			continue
+		}
+		if len(strings.Trim(item.Title, " \t\r\n")) == 0 {
+			logs.Log.Warning("empty content for save:%v", item.Outer_url)
+			continue
+		}
+
 		_, err = Orm.Insert(item)
 		if err != nil {
-			fmt.Println("insert Article error:", err)
+			logs.Log.Warning("insert Article error:%v", err)
 			continue
 		}
 		//fmt.Println("insert success: num=", num, "all=", succNum, "id=", item.Id)
 
+		succNum++
+
+		continue
 		// save as hot article, so show
 		hotItem := new(HotArticleEntity)
 		hotItem.Title = item.Title
@@ -99,10 +117,9 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 			continue
 		}
 
-		succNum++
 	}
 
-	fmt.Println("all", succNum, "saved")
+	logs.Log.Debug("all %v saved", succNum)
 	return
 }
 
