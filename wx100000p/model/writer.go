@@ -78,7 +78,9 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 	//session := Orm.NewSession()
 	for _, item := range items {
 
-		item.Origin = origin
+		if len(item.Origin) == 0 {
+			item.Origin = origin
+		}
 
 		if len(strings.Trim(item.Content, " \t\r\n")) == 0 {
 			logs.Log.Warning("empty content for save:%v", item.Outer_url)
@@ -91,7 +93,7 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 
 		_, err = Orm.Insert(item)
 		if err != nil {
-			logs.Log.Warning("insert Article error:%v", err)
+			logs.Log.Warning("insert Article error:%v item=%v", err, item)
 			continue
 		}
 		//fmt.Println("insert success: num=", num, "all=", succNum, "id=", item.Id)
