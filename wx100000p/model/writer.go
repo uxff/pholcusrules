@@ -94,6 +94,31 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 			item.Author = "wx100000p(uxff)"
 		}
 
+		// you should search, if url exist, do not save
+		var exist bool
+		var queryArticle = ArticleEntity{Outer_url: item.Outer_url}
+		//Orm.QueryRow("select * from fh_article where ").Scan(&existArticle)
+		rows, err := Orm.Rows(&queryArticle)
+		if err != nil {
+			logs.Log.Warning("could not query by outer_url, err:%v", err)
+		} else {
+			defer rows.Close()
+			for rows.Next() {
+				err = rows.Scan(&queryArticle)
+				if err != nil {
+					logs.Log.Warning("could not scan, err:%v", err)
+				} else {
+					exist = true
+					break
+				}
+			}
+		}
+
+		if exist {
+			logs.Log.Warning("outer_url already exist in db:%v", item.Outer_url)
+			continue
+		}
+
 		_, err = Orm.Insert(item)
 		if err != nil {
 			logs.Log.Warning("insert Article error:%v item=%v", err, item)
