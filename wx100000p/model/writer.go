@@ -90,6 +90,9 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 			logs.Log.Warning("empty content for save:%v", item.Outer_url)
 			continue
 		}
+		if len(item.Author) == 0 {
+			item.Author = "wx100000p(uxff)"
+		}
 
 		_, err = Orm.Insert(item)
 		if err != nil {
