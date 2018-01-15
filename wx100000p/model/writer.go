@@ -87,7 +87,7 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 			continue
 		}
 		if len(strings.Trim(item.Title, " \t\r\n")) == 0 {
-			logs.Log.Warning("empty content for save:%v", item.Outer_url)
+			logs.Log.Warning("empty title for save:%v", item.Outer_url)
 			continue
 		}
 		if len(item.Author) == 0 {
@@ -121,7 +121,7 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 
 		_, err = Orm.Insert(item)
 		if err != nil {
-			logs.Log.Warning("insert Article error:%v item=%v", err, item)
+			logs.Log.Error("insert Article error:%v item=%v", err, item)
 			continue
 		}
 		//fmt.Println("insert success: num=", num, "all=", succNum, "id=", item.Id)
@@ -143,7 +143,7 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 
 		_, err = Orm.Insert(hotItem)
 		if err != nil {
-			fmt.Println("insert hotArticle error:", err)
+			logs.Log.Error("insert hotArticle error:%v", err)
 			continue
 		}
 
