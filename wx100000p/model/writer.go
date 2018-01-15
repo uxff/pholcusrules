@@ -32,11 +32,11 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 		return -1, err
 	}
 
-	for _, item := range aList {
-	    item.Create_time = time.Now()
+	for i, _ := range aList {
+	    aList[i].Create_time = time.Now()
 		
-		if item.Pubdate.IsZero() {
-			item.Pubdate = time.Now()
+		if aList[i].Pubdate.IsZero() {
+			aList[i].Pubdate = time.Now()
 		}
 	}
 
