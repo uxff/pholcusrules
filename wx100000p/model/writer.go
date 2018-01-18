@@ -35,6 +35,7 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	var aList []ArticleEntity
 	err = json.Unmarshal(buf, &aList)
 	if err != nil {
+		logs.Log.Error("json unmarshal error when write:%v", err)
 		return -1, err
 	}
 
@@ -96,27 +97,30 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 
 		// you should search, if url exist, do not save
 		var exist bool
-		var queryArticle = ArticleEntity{Outer_url: item.Outer_url}
-		//Orm.QueryRow("select * from fh_article where ").Scan(&existArticle)
-		rows, err := Orm.Rows(&queryArticle)
-		if err != nil {
-			logs.Log.Warning("could not query by outer_url, err:%v", err)
-		} else {
-			defer rows.Close()
-			for rows.Next() {
-				err = rows.Scan(&queryArticle)
-				if err != nil {
-					logs.Log.Warning("could not scan, err:%v", err)
-				} else {
-					exist = true
-					break
+
+		if len(item.Outer_url) > 1 {
+			var queryArticle = ArticleEntity{Outer_url: item.Outer_url}
+			//Orm.QueryRow("select * from fh_article where ").Scan(&existArticle)
+			rows, err := Orm.Rows(&queryArticle)
+			if err != nil {
+				logs.Log.Warning("could not query by outer_url, err:%v", err)
+			} else {
+				defer rows.Close()
+				for rows.Next() {
+					err = rows.Scan(&queryArticle)
+					if err != nil {
+						logs.Log.Warning("could not scan, err:%v", err)
+					} else {
+						exist = true
+						break
+					}
 				}
 			}
-		}
 
-		if exist {
-			logs.Log.Warning("outer_url already exist in db:%v", item.Outer_url)
-			continue
+			if exist {
+				logs.Log.Warning("outer_url already exist in db:%v", item.Outer_url)
+				continue
+			}
 		}
 
 		_, err = Orm.Insert(item)
@@ -127,25 +131,6 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 		//fmt.Println("insert success: num=", num, "all=", succNum, "id=", item.Id)
 
 		succNum++
-
-		continue
-		// save as hot article, so show
-		hotItem := new(HotArticleEntity)
-		hotItem.Title = item.Title
-		hotItem.Is_local_url = 1
-		hotItem.Status = 2
-		hotItem.Surface_url = item.Surface_url
-		hotItem.Create_time = item.Create_time
-		hotItem.Last_modified = item.Last_modified
-		hotItem.Admin_id = item.Admin_id
-		hotItem.Admin_name = item.Admin_name + "(gohead)"
-		hotItem.Url = MakeArticleUrl(&item)
-
-		_, err = Orm.Insert(hotItem)
-		if err != nil {
-			logs.Log.Error("insert hotArticle error:%v", err)
-			continue
-		}
 
 	}
 

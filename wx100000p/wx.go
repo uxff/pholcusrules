@@ -30,8 +30,13 @@ import (
 )
 
 const (
-	HOME_URL     = "http://100000p.com"
-	PUBLIC_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
+	HOME_URL      = "http://100000p.com"
+	AGENT_PUBLIC  = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"
+	AGENT_WX      = "Mozilla/5.0 (Linux; Android 6.0; 1503-M02 Build/MRA58K) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/37.0.0.0 Mobile MQQBrowser/6.2 TBS/036558 Safari/537.36 MicroMessenger/6.5.7.1041 NetType/WIFI Language/zh_CN"
+	AGENT_WX_3G   = "Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Mobile/12A365 MicroMessenger/6.0 NetType/3G+"
+	AGENT_WX_WIFI = "Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Mobile/12A365 MicroMessenger/6.0 NetType/WIFI"
+	AGENT_WX_IOS  = "Mozilla/5.0 (iPhone; CPU iPhone OS 10_2_1 like Mac OS X) AppleWebKit/602.4.6 (KHTML, like Gecko) Mobile/14D27 MicroMessenger/6.5.6 NetType/4G Language/zh_CN"
+	AGENT_WX_AND  = "Mozilla/5.0 (Linux; Android 5.1; OPPO R9tm Build/LMY47I; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.49 Mobile MQQBrowser/6.2 TBS/043220 Safari/537.36 MicroMessenger/6.5.7.1041 NetType/4G Language/zh_CN"
 )
 
 func init() {
@@ -51,7 +56,7 @@ var Wx100000p = &Spider{
 				Url:  HOME_URL,
 				Rule: "TIMELINE",
 				Header: http.Header{
-					"User-Agent": []string{PUBLIC_AGENT},
+					"User-Agent": []string{AGENT_PUBLIC},
 				},
 			})
 		},
@@ -66,7 +71,7 @@ var Wx100000p = &Spider{
 							// log.Print(url)
 							p := a.Find("p")
 
-							ctx.AddQueue(&request.Request{Url: HOME_URL + url, Rule: "DETAIL", Header: http.Header{"Referer": []string{HOME_URL}, "User-Agent": []string{PUBLIC_AGENT}}, Temp: request.Temp{"abstract": p.Text()}})
+							ctx.AddQueue(&request.Request{Url: HOME_URL + url, Rule: "DETAIL", Header: http.Header{"Referer": []string{HOME_URL}, "User-Agent": []string{AGENT_PUBLIC}}, Temp: request.Temp{"abstract": p.Text()}})
 						}
 					})
 
