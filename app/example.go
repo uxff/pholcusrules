@@ -17,6 +17,7 @@ import (
 	"github.com/henrylee2cn/pholcus/runtime/status"
 	"github.com/henrylee2cn/pholcus/web"
 
+	_ "github.com/uxff/pholcusrules/duanwenxue"
 	_ "github.com/uxff/pholcusrules/kuaidaili"
 	_ "github.com/uxff/pholcusrules/picsetcrawler"
 	_ "github.com/uxff/pholcusrules/qzone"
