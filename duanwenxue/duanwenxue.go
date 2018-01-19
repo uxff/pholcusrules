@@ -116,7 +116,7 @@ var Duanwenxue = &Spider{
 							"author":      "xahoo",
 							"surface_url": "",
 							"outer_url":   url,
-							"origin":      "wx100000p",
+							"origin":      "duanwenxue",
 							"remark":      "哲理,格言,语录,唯美,名言",
 							"abstract":    content,
 							"content":     content,

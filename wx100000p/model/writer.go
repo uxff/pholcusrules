@@ -19,6 +19,8 @@ import (
 	"github.com/henrylee2cn/pholcus/logs" //信息输出
 )
 
+type ArticleWriter struct{}
+
 var Orm *xorm.Engine
 var OrmEngine string
 var OrmDB string
@@ -26,8 +28,7 @@ var OrmDB string
 //var NormalFetcher *h.Fetcher
 
 var MysqlConnectionStr string = "www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8"
-
-type ArticleWriter struct{}
+var defaultWriter = &ArticleWriter{}
 
 func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	// json unmarshal from buf to entities
@@ -144,3 +145,13 @@ func MakeArticleUrl(a *ArticleEntity) string {
 	str := "http://xahoo.xenith.top/index.php?r=article/show&id=" + fmt.Sprintf("%d", a.Id) + "&sign=" + sign
 	return str
 }
+
+func Write(buf []byte) (n int, err error) {
+    return defaultWriter.Write(buf)
+}
+
+func Close() error {
+    return defaultWriter.Close()
+}
+
+
