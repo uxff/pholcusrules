@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -53,7 +52,6 @@ func init() {
 }
 
 func DefaultRun(uiDefault string) {
-	fmt.Printf("%v\n\n", config.FULL_NAME)
 	flag.String("a *********************************************** common *********************************************** -a", "", "")
 	// 操作界面
 	uiflag = &uiDefault
@@ -157,6 +155,7 @@ func run(which string) {
 	ctrl := make(chan os.Signal, 1)
 	signal.Notify(ctrl, os.Interrupt, os.Kill)
 	go web.Run()
+
 	<-ctrl
 }
 

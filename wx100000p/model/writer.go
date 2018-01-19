@@ -11,6 +11,7 @@ import (
 	// "crypto/md5"
 	"time"
 
+	// 去掉driver初始化 在别处已经引用 只能引用一次
 	//_ "github.com/go-sql-driver/mysql"
 	"encoding/json"
 	"fmt"
@@ -29,6 +30,8 @@ var OrmDB string
 
 var MysqlConnectionStr string = "www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8"
 var defaultWriter = &ArticleWriter{}
+var defaultAuthor string = "xahoo"
+var defaultOrigin string = "wx100000p"
 
 func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	// json unmarshal from buf to entities
@@ -48,7 +51,7 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 		}
 	}
 
-	SaveArticles(aList, "wx100000p")
+	SaveArticles(aList, defaultOrigin)
 
 	// open session
 	// write in
@@ -93,7 +96,7 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 			continue
 		}
 		if len(item.Author) == 0 {
-			item.Author = "wx100000p(uxff)"
+			item.Author = defaultAuthor
 		}
 
 		// you should search, if url exist, do not save
@@ -147,11 +150,17 @@ func MakeArticleUrl(a *ArticleEntity) string {
 }
 
 func Write(buf []byte) (n int, err error) {
-    return defaultWriter.Write(buf)
+	return defaultWriter.Write(buf)
 }
 
 func Close() error {
-    return defaultWriter.Close()
+	return defaultWriter.Close()
 }
 
+func SetOrigin(v string) {
+	defaultOrigin = v
+}
 
+func SetAuthor(v string) {
+	defaultAuthor = v
+}
