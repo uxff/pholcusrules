@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/henrylee2cn/pholcus/app"
+	"github.com/henrylee2cn/pholcus/cmd"
 	"github.com/henrylee2cn/pholcus/common/gc"
 	"github.com/henrylee2cn/pholcus/config"
 	"github.com/henrylee2cn/pholcus/runtime/cache"
@@ -54,9 +56,11 @@ func init() {
 func DefaultRun(uiDefault string) {
 	flag.String("a *********************************************** common *********************************************** -a", "", "")
 	// 操作界面
-	uiflag = &uiDefault
+	//uiflag = &uiDefault
+	uiflag = flag.String("ui", uiDefault, "   <选择操作界面> [web] [gui] [cmd]")
 	flagCommon()
 	web.Flag()
+	cmd.Flag()
 	flag.String("z", "", "README:   参数设置参考 [xxx] 提示，参数中包含多个值时以 \",\" 间隔。\r\n")
 	flag.Parse()
 	writeFlag()
@@ -101,7 +105,7 @@ func flagCommon() {
 		func() string {
 			var outputlib string
 			for _, v := range app.LogicApp.GetOutputLib() {
-				outputlib += "[" + v + "] "
+				outputlib += fmt.Sprintf("[%v]", v) //"[" + v + "] "
 			}
 			return "   <输出方式: > " + strings.TrimRight(outputlib, " ")
 		}())
@@ -143,7 +147,7 @@ func flagCommon() {
 		"   <继承并保存失败记录> [true] [false]")
 }
 
-func run(which string) {
+func run(ui string) {
 	switch runtime.GOOS {
 	case "windows":
 		exec.Command("cmd", "/c", "title", config.FULL_NAME).Start()
@@ -154,7 +158,19 @@ func run(which string) {
 
 	ctrl := make(chan os.Signal, 1)
 	signal.Notify(ctrl, os.Interrupt, os.Kill)
-	go web.Run()
+	switch ui {
+	case "web":
+		go web.Run()
+	case "cmd":
+		cmd.Run()
+	}
+
+	/*
+		spiderList := app.LogicApp.GetSpiderLib()
+		for _, spider := range spiderList {
+			fmt.Printf("%v %v\n", spider.GetId(), spider.GetName(), spider.GetDescription())
+		}
+	*/
 
 	<-ctrl
 }
