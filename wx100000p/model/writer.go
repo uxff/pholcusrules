@@ -32,6 +32,7 @@ var MysqlConnectionStr string = "www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=u
 var defaultWriter = &ArticleWriter{}
 var defaultAuthor string = "xahoo"
 var defaultOrigin string = "wx100000p"
+var defaultUrlMaker func(*ArticleEntity) string
 
 func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	// json unmarshal from buf to entities
@@ -143,6 +144,9 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 }
 
 func MakeArticleUrl(a *ArticleEntity) string {
+    if defaultUrlMaker != nil {
+        return defaultUrlMaker(a)
+    }
 	//strings.a.Id
 	sign := "ignorethesestrings"
 	str := "http://xahoo.xenith.top/index.php?r=article/show&id=" + fmt.Sprintf("%d", a.Id) + "&sign=" + sign
@@ -164,3 +168,8 @@ func SetOrigin(v string) {
 func SetAuthor(v string) {
 	defaultAuthor = v
 }
+
+func SetUrlMaker(maker func(*ArticleEntity)string) {
+    defaultUrlMaker = maker
+}
+
