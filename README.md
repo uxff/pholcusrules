@@ -15,3 +15,8 @@ go build app/example.go
 ./example
 ```
 
+## or use build and run, clean history
+```
+./build.sh
+```
+
