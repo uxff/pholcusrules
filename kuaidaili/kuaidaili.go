@@ -41,7 +41,7 @@ func init() {
 
 var Kuaidaili = &Spider{
 	Name:        "Kuaidaili",
-	Description: "Kuaidaili",
+	Description: "Kuaidaili KEYIN: cookie",
 	// Pausetime:    300,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
