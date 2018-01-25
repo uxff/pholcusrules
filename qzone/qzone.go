@@ -65,6 +65,9 @@ var QzoneArticlesx = &Spider{
 						"User-Agent": []string{"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36"},
 					},
 					DownloaderID: 0,
+					Temp: map[string]interface{}{
+						"blogId": blogid,
+					},
 				})
 			}
 		},
@@ -130,17 +133,9 @@ var QzoneArticlesx = &Spider{
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
-					var url = ctx.GetUrl()
 
 					//var blogId int64 = 0
-					var blogIdStr string
-					if blogIdIdx := strings.Index(url, "blogid="); blogIdIdx > 0 {
-						blogIdStr = url[blogIdIdx+9 : blogIdIdx+30]
-						if commaIdx := strings.Index(blogIdStr, "&"); commaIdx > 0 {
-							blogIdStr = blogIdStr[:commaIdx]
-						}
-						//fmt.Sscanf(string(blogIdStr), "%d", &blogId)
-					}
+					blogIdStr := ctx.GetTemp("blogId", "").(string)
 
 					var detail = query.Find("#blogDetailDiv").Text()
 					var title = query.Find(".blog_tit_detail").Eq(0).Text()
