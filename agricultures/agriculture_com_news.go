@@ -23,7 +23,7 @@ import (
 	// 字符串处理包
 	//"regexp"
 	//"strconv"
-	//"strings"
+	"strings"
 	// 其他包
 	"fmt"
 	// "math"
@@ -77,13 +77,18 @@ var Agriculture_com = &Spider{
 						href, _ := as.Find(".field-content").Find("a").Attr("href")
 						abstract := as.Find(".field-body").Find("p").Text()
 						imgUrl, _ := as.Find(".field-image").Find("img").Attr("src")
-						viewMark := as.Find(".views-field-type").Find("field-content").Text()
+						viewMark := as.Find(".views-field-type").Find(".field-content").Text()
 
-						logs.Log.Warning("find a article:%v %v", title, href)
+						logs.Log.Warning("find a article:%v %v viewby:%v", title, href, viewMark)
+
+						if viewMark != "Article" && viewMark != "Sequence" {
+							logs.Log.Warning("this article has no rule:[%v] %v %v", viewMark, title, href)
+							return
+						}
 
 						ctx.AddQueue(&request.Request{
 							Url:  href,
-							Rule: "DETAIL",
+							Rule: fmt.Sprintf("DETAIL_%s", strings.ToUpper(viewMark)),
 							Header: http.Header{
 								"User-Agent": []string{consts.AGENT_PUBLIC},
 								"Referer":    []string{HOME_URL},
@@ -101,8 +106,7 @@ var Agriculture_com = &Spider{
 
 				},
 			},
-			"DETAIL": {
-				//注意：有无字段语义和是否输出数据必须保持一致
+			"DETAIL_ARTICLE": {
 				ItemFields: []string{
 					"Title",
 					"Author",
@@ -128,6 +132,91 @@ var Agriculture_com = &Spider{
 					//re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
 					//contentText := re.ReplaceAllString(content, "")
 					// 内容中如果图片不是
+
+					// Title
+					title := ctx.GetTemp("title", "").(string)
+					// Author
+
+					// Time
+					pubtime := query.Find(".byline-date").Text()
+
+					// Abstract
+					abstract := ctx.GetTemp("abstract", "").(string)
+
+					// Keywords
+					keywords := ""
+
+					surfaceUrl := ctx.GetTemp("surface_url", "").(string)
+					outerUrl := ctx.GetTemp("outer_url", "").(string)
+
+					logs.Log.Warning("will write a article:%v", title)
+
+					// 输出到mysql
+					artInfo := map[string]string{
+						"title":       title,
+						"author":      author,
+						"surface_url": surfaceUrl,
+						"outer_url":   outerUrl,
+						"origin":      "agri",
+						"remark":      keywords,
+						"abstract":    abstract,
+						"content":     content,
+						//"pubdate": pubtime,
+					}
+
+					if false {
+
+						buf, err := json.Marshal([]map[string]string{artInfo})
+						if err != nil {
+							logs.Log.Warning("json marshal error:%v", err)
+						}
+
+						writer := &wxmodel.ArticleWriter{}
+
+						_, err = writer.Write(buf)
+						if err != nil {
+							logs.Log.Warning("write article writer to mysql error:%v", err)
+						}
+					}
+
+					// 结果存入Response中转
+					ctx.Output(map[int]interface{}{
+						0: title,
+						1: author,
+						2: surfaceUrl,
+						3: pubtime,
+						4: abstract,
+						5: outerUrl,
+						6: content,
+					})
+				},
+			},
+			"DETAIL_SEQUENCE": {
+				ItemFields: []string{
+					"Title",
+					"Author",
+					"Thumb",
+					"Time",
+					"Abstract",
+					"OuterUrl",
+					"Content",
+				},
+				ParseFunc: func(ctx *Context) {
+					query := ctx.GetDom()
+
+					author := query.Find(".field-byline").Text()
+
+					content := ""
+					query.Find(".pane-content").Find(".slides").Find("li").Each(func(lii int, lis *goquery.Selection) {
+						theImgHtml, _ := lis.Find(".field-image").Html()
+						theCnt, _ := lis.Find(".step-content").Html()
+						// step over ads
+						if theCnt != "" {
+							content += theImgHtml + theCnt
+							stepTitle := lis.Find(".step-title").Text()
+							logs.Log.Warning("find a li:%v %s", lii, stepTitle)
+						}
+					})
 
 					// Title
 					title := ctx.GetTemp("title", "").(string)
