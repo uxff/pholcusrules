@@ -10,6 +10,7 @@ import (
 	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
 	"github.com/uxff/pholcusrules/consts"
+	"github.com/uxff/pholcusrules/langtranslator"
 	wxmodel "github.com/uxff/pholcusrules/wx100000p/model"
 
 	// net包
@@ -85,6 +86,16 @@ var Agriculture_com = &Spider{
 							logs.Log.Warning("this article has no rule:[%v] %v %v", viewMark, title, href)
 							return
 						}
+
+						trans := langtranslator.SelectTranslator(langtranslator.TRANS_BAIDU)
+						trans.SetApiConfig(map[string]interface{}{"appid": "20180125000118458", "appsecret": "htbcOMDlQ_Q3f2Eq93up"})
+						trans.SetFromLang("en")
+						trans.SetToLang("zh")
+						transRet, err := trans.Translate(abstract)
+						if err != nil {
+							logs.Log.Warning("trans error:%v :%v", err, abstract)
+						}
+						logs.Log.Warning("TRANS[%v]=>[%v]", abstract, transRet)
 
 						ctx.AddQueue(&request.Request{
 							Url:  href,
