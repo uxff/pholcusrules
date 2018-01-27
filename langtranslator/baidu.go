@@ -3,6 +3,7 @@ package langtranslator
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -38,6 +39,15 @@ type BaiduTranslator struct {
 	tasks    map[int]*BaiduTransTask
 }
 
+type BaiduTransRes struct {
+	From         string `json:"from"`
+	To           string `json:"to"`
+	Trans_result []struct {
+		Src string `json:"src"`
+		Dst string `json:"dst"`
+	} `json:"trans_result"`
+}
+
 var transTaskNextId = 1
 var baidu_appid string
 var baidu_appsecret string
@@ -64,7 +74,7 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 
 	this.queryStr = str
 
-	contentType := "x-www-form-urlencoded"
+	contentType := "application/x-www-form-urlencoded"
 
 	salt := fmt.Sprintf("%d", time.Now().Unix())
 	sign := makeSign(map[string]string{"q": str, "salt": salt})
@@ -72,7 +82,7 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 	q, _ := url.ParseQuery(body)
 	bodyEncoded := q.Encode()
 
-	fmt.Println("TRANS BY BAIDU:", body)
+	//fmt.Println("TRANS BY BAIDU:", body, bodyEncoded)
 
 	res, err := http.Post(BAIDU_API_URL, contentType, bytes.NewReader([]byte(bodyEncoded)))
 	if err != nil {
@@ -83,9 +93,19 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 	//this.retStr = str
 	allRetBytes, err := ioutil.ReadAll(res.Body)
 
-	this.retStr = string(allRetBytes)
+	//fmt.Println("getTransRes:", string(allRetBytes))
 
-	fmt.Println("TRANS OVER:", this.retStr, err)
+	transRes := new(BaiduTransRes)
+	err = json.Unmarshal(allRetBytes, transRes)
+	if err != nil {
+		return "", err
+	}
+
+	if len(transRes.Trans_result) > 0 {
+		this.retStr = transRes.Trans_result[0].Dst
+	}
+
+	//fmt.Println("TRANS OVER:", this.retStr, err)
 
 	return this.retStr, err
 }
@@ -123,12 +143,9 @@ func makeSign(params map[string]string) string {
 
 	h := md5.New()
 	h.Write([]byte(longStr))
-	signByte := h.Sum([]byte(longStr))
+	signByte := h.Sum(nil)
 
-	sign := ""
-	for _, ch := range signByte {
-		sign += fmt.Sprintf("%0x", ch)
-	}
+	sign := fmt.Sprintf("%x", signByte)
 	return sign
 }
 

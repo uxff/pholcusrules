@@ -40,7 +40,14 @@ const (
 	VIEW_URL      = "https://www.agriculture.com/views/ajax"
 )
 
+var baiduTrans = langtranslator.SelectTranslator(langtranslator.TRANS_BAIDU)
+
 func init() {
+
+	baiduTrans.SetApiConfig(map[string]interface{}{"appid": "20180125000118458", "appsecret": "htbcOMDlQ_Q3f2Eq93up"})
+	baiduTrans.SetFromLang("en")
+	baiduTrans.SetToLang("zh")
+
 	Agriculture_com.Register()
 }
 
@@ -52,11 +59,13 @@ var Agriculture_com = &Spider{
 	Name:        "Agriculture.com",
 	Description: "www.agriculture.com/news",
 	// Pausetime:    300,
-	//Keyin:        KEYIN,
+	Keyin:        KEYIN,
 	Limit:        LIMIT,
 	EnableCookie: false,
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
+
+			//keyIn := ctx.GetKeyin()
 
 			ctx.AddQueue(&request.Request{
 				Url:  TECH_URL,
@@ -87,16 +96,6 @@ var Agriculture_com = &Spider{
 							return
 						}
 
-						trans := langtranslator.SelectTranslator(langtranslator.TRANS_BAIDU)
-						trans.SetApiConfig(map[string]interface{}{"appid": "20180125000118458", "appsecret": "htbcOMDlQ_Q3f2Eq93up"})
-						trans.SetFromLang("en")
-						trans.SetToLang("zh")
-						transRet, err := trans.Translate(abstract)
-						if err != nil {
-							logs.Log.Warning("trans error:%v :%v", err, abstract)
-						}
-						logs.Log.Warning("TRANS[%v]=>[%v]", abstract, transRet)
-
 						ctx.AddQueue(&request.Request{
 							Url:  href,
 							Rule: fmt.Sprintf("DETAIL_%s", strings.ToUpper(viewMark)),
@@ -126,6 +125,9 @@ var Agriculture_com = &Spider{
 					"Abstract",
 					"OuterUrl",
 					"Content",
+					"Title-",
+					"Abstract-",
+					"Content-",
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
@@ -160,22 +162,42 @@ var Agriculture_com = &Spider{
 					surfaceUrl := ctx.GetTemp("surface_url", "").(string)
 					outerUrl := ctx.GetTemp("outer_url", "").(string)
 
+					// translate
+					absTransRet, err := baiduTrans.Translate(abstract)
+					if err != nil {
+						logs.Log.Warning("trans error:%v :%v", err, abstract)
+					}
+					//logs.Log.Warning("TRANS[%v]=>[%v]", abstract, absTransRet)
+					//abstract = absTransRet
+
+					titleTransRet, err := baiduTrans.Translate(title)
+					if err != nil {
+						logs.Log.Warning("trans error:%v :%v", err, title)
+					}
+					//title = titleTransRet
+
+					contentTransRet, err := baiduTrans.Translate(content)
+					if err != nil {
+						logs.Log.Warning("trans error:%v :%v", err, content[:20])
+					}
+					//content = contentTransRet
+
 					logs.Log.Warning("will write a article:%v", title)
 
-					// 输出到mysql
-					artInfo := map[string]string{
-						"title":       title,
-						"author":      author,
-						"surface_url": surfaceUrl,
-						"outer_url":   outerUrl,
-						"origin":      "agri",
-						"remark":      keywords,
-						"abstract":    abstract,
-						"content":     content,
-						//"pubdate": pubtime,
-					}
-
 					if false {
+
+						// 输出到mysql
+						artInfo := map[string]string{
+							"title":       title,
+							"author":      author,
+							"surface_url": surfaceUrl,
+							"outer_url":   outerUrl,
+							"origin":      "agri",
+							"remark":      keywords,
+							"abstract":    abstract,
+							"content":     content,
+							//"pubdate": pubtime,
+						}
 
 						buf, err := json.Marshal([]map[string]string{artInfo})
 						if err != nil {
@@ -199,6 +221,9 @@ var Agriculture_com = &Spider{
 						4: abstract,
 						5: outerUrl,
 						6: content,
+						7: titleTransRet,
+						8: absTransRet,
+						9: contentTransRet,
 					})
 				},
 			},
