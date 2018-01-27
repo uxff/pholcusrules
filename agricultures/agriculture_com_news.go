@@ -40,13 +40,13 @@ const (
 	VIEW_URL      = "https://www.agriculture.com/views/ajax"
 )
 
-var baiduTrans = langtranslate.SelectTranslator(langtranslate.TRANS_BAIDU)
+var trans = langtranslate.SelectTranslator(langtranslate.TRANSLATOR_BAIDU)
 
 func init() {
 
-	baiduTrans.SetApiConfig(map[string]interface{}{"appid": "20180125000118458", "appsecret": "htbcOMDlQ_Q3f2Eq93up"})
-	baiduTrans.SetFromLang("en")
-	baiduTrans.SetToLang("zh")
+	trans.SetApiConfig(map[string]interface{}{"appid": "20180125000118458", "appsecret": "htbcOMDlQ_Q3f2Eq93up"})
+	trans.SetFromLang("en")
+	trans.SetToLang("zh")
 
 	Agriculture_com.Register()
 }
@@ -163,22 +163,27 @@ var Agriculture_com = &Spider{
 					outerUrl := ctx.GetTemp("outer_url", "").(string)
 
 					// translate
-					absTransRet, err := baiduTrans.Translate(abstract)
+					absTransRet, err := trans.Translate(abstract)
 					if err != nil {
 						logs.Log.Warning("trans error:%v :%v", err, abstract)
 					}
 					//logs.Log.Warning("TRANS[%v]=>[%v]", abstract, absTransRet)
 					//abstract = absTransRet
 
-					titleTransRet, err := baiduTrans.Translate(title)
+					titleTransRet, err := trans.Translate(title)
 					if err != nil {
 						logs.Log.Warning("trans error:%v :%v", err, title)
 					}
 					//title = titleTransRet
 
-					contentTransRet, err := baiduTrans.Translate(content)
-					if err != nil {
-						logs.Log.Warning("trans error:%v :%v", err, content[:20])
+					contentArr := strings.Split(content, "\n")
+					contentTransed := ""
+					for _, contentLine := range contentArr {
+						contentTransRet, err := trans.Translate(content)
+						if err != nil {
+							logs.Log.Warning("trans error:%v :%v", err, contentLine[:20])
+						}
+						contentTransed += contentTransRet
 					}
 					//content = contentTransRet
 
@@ -223,7 +228,7 @@ var Agriculture_com = &Spider{
 						6: content,
 						7: titleTransRet,
 						8: absTransRet,
-						9: contentTransRet,
+						9: contentTransed,
 					})
 				},
 			},

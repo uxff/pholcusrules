@@ -17,9 +17,9 @@ const (
 type TRANSLATOR_ID int
 
 const (
-	TRANS_BAIDU  TRANSLATOR_ID = iota
-	TRANS_GOOGLE TRANSLATOR_ID = iota
-	TRANS_YOUDAO TRANSLATOR_ID = iota
+	TRANSLATOR_BAIDU  TRANSLATOR_ID = iota
+	TRANSLATOR_GOOGLE TRANSLATOR_ID = iota
+	TRANSLATOR_YOUDAO TRANSLATOR_ID = iota
 )
 
 type Translator interface {
@@ -38,11 +38,11 @@ type Translator interface {
 
 func SelectTranslator(id TRANSLATOR_ID) Translator {
 	switch id {
-	case TRANS_BAIDU:
+	case TRANSLATOR_BAIDU:
 		return &BaiduTranslator{}
-	case TRANS_GOOGLE:
+	case TRANSLATOR_GOOGLE:
 		//return &GoogleTranslator{}
-	case TRANS_YOUDAO:
+	case TRANSLATOR_YOUDAO:
 		//return &YoudaoTranslator{}
 
 	}
