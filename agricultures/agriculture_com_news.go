@@ -184,7 +184,7 @@ var Agriculture_com = &Spider{
 						if err != nil {
 							logs.Log.Warning("trans error:%v :%v", err, contentLine[:20])
 						}
-						contentTransed += contentTransRet
+						contentTransed += contentTransRet + "\n"
 					}
 					//content = contentTransRet
 
@@ -198,7 +198,7 @@ var Agriculture_com = &Spider{
 							"author":      author,
 							"surface_url": surfaceUrl,
 							"outer_url":   outerUrl,
-							"origin":      "agri",
+							"origin":      "agri-zh",
 							"remark":      keywords,
 							"abstract":    absTransRet,
 							"content":     contentTransed,
