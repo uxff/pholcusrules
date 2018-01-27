@@ -176,10 +176,11 @@ var Agriculture_com = &Spider{
 					}
 					//title = titleTransRet
 
+					// 长内容需要拼接
 					contentArr := strings.Split(content, "\n")
 					contentTransed := ""
 					for _, contentLine := range contentArr {
-						contentTransRet, err := trans.Translate(content)
+						contentTransRet, err := trans.Translate(contentLine)
 						if err != nil {
 							logs.Log.Warning("trans error:%v :%v", err, contentLine[:20])
 						}
@@ -189,18 +190,18 @@ var Agriculture_com = &Spider{
 
 					logs.Log.Warning("will write a article:%v", title)
 
-					if false {
+					if true {
 
 						// 输出到mysql
 						artInfo := map[string]string{
-							"title":       title,
+							"title":       titleTransRet,
 							"author":      author,
 							"surface_url": surfaceUrl,
 							"outer_url":   outerUrl,
 							"origin":      "agri",
 							"remark":      keywords,
-							"abstract":    abstract,
-							"content":     content,
+							"abstract":    absTransRet,
+							"content":     contentTransed,
 							//"pubdate": pubtime,
 						}
 
