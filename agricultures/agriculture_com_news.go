@@ -10,7 +10,7 @@ import (
 	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
 	"github.com/uxff/pholcusrules/consts"
-	"github.com/uxff/pholcusrules/langtranslator"
+	"github.com/uxff/pholcusrules/langtranslate"
 	wxmodel "github.com/uxff/pholcusrules/wx100000p/model"
 
 	// net包
@@ -40,7 +40,7 @@ const (
 	VIEW_URL      = "https://www.agriculture.com/views/ajax"
 )
 
-var baiduTrans = langtranslator.SelectTranslator(langtranslator.TRANS_BAIDU)
+var baiduTrans = langtranslate.SelectTranslator(langtranslate.TRANS_BAIDU)
 
 func init() {
 
