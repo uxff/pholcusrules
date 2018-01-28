@@ -40,7 +40,7 @@ const (
 	VIEW_URL      = "https://www.agriculture.com/views/ajax"
 )
 
-var trans = langtranslate.SelectTranslator(langtranslate.TRANSLATOR_BAIDU)
+var trans = langtranslate.SelectTranslator(langtranslate.TRANSLATOR_YOUDAO)
 
 func init() {
 
@@ -75,6 +75,24 @@ var Agriculture_com = &Spider{
 					"Referer":    []string{TECH_URL},
 				},
 			})
+
+			ctx.AddQueue(&request.Request{
+				Url:  MACHINE_URL,
+				Rule: "TIMELINE",
+				Header: http.Header{
+					"User-Agent": []string{consts.AGENT_PUBLIC},
+					"Referer":    []string{TECH_URL},
+				},
+			})
+
+			ctx.AddQueue(&request.Request{
+				Url:  LIVESTOCK_URL,
+				Rule: "TIMELINE",
+				Header: http.Header{
+					"User-Agent": []string{consts.AGENT_PUBLIC},
+					"Referer":    []string{TECH_URL},
+				},
+			})
 		},
 
 		Trunk: map[string]*Rule{
@@ -102,6 +120,7 @@ var Agriculture_com = &Spider{
 							Header: http.Header{
 								"User-Agent": []string{consts.AGENT_PUBLIC},
 								"Referer":    []string{HOME_URL},
+								"Cookie":     []string{ctx.GetCookie()},
 							},
 							Temp: map[string]interface{}{
 								"title":       title,
@@ -176,13 +195,17 @@ var Agriculture_com = &Spider{
 					}
 					//title = titleTransRet
 
-					// 长内容需要拼接
+					// 长内容需要拆开翻译，翻译后拼装
 					contentArr := strings.Split(content, "\n")
 					contentTransed := ""
 					for _, contentLine := range contentArr {
 						contentTransRet, err := trans.Translate(contentLine)
 						if err != nil {
-							logs.Log.Warning("trans error:%v :%v", err, contentLine[:20])
+							contentLineAbsLen := len(contentLine)
+							if contentLineAbsLen > 20 {
+								contentLineAbsLen = 20
+							}
+							logs.Log.Warning("trans error:%v :%v", err, contentLine[:contentLineAbsLen])
 						}
 						contentTransed += contentTransRet + "\n"
 					}
@@ -254,7 +277,7 @@ var Agriculture_com = &Spider{
 						theCnt, _ := lis.Find(".step-content").Html()
 						// step over ads
 						if theCnt != "" {
-							content += theImgHtml + theCnt
+							content += theImgHtml + theCnt + "\n"
 							stepTitle := lis.Find(".step-title").Text()
 							logs.Log.Warning("find a li:%v %s", lii, stepTitle)
 						}

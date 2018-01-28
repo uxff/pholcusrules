@@ -43,7 +43,7 @@ func SelectTranslator(id TRANSLATOR_ID) Translator {
 	case TRANSLATOR_GOOGLE:
 		//return &GoogleTranslator{}
 	case TRANSLATOR_YOUDAO:
-		//return &YoudaoTranslator{}
+		return &YoudaoTranslator{}
 
 	}
 	return nil

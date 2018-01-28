@@ -53,7 +53,7 @@ type BaiduTransRes struct {
 	} `json:"trans_result"`
 }
 
-var transTaskNextId = 1
+var baiduTransTaskNextId = 0
 var baidu_appid string
 var baidu_appsecret string
 
@@ -115,14 +115,14 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 	return this.retStr, err
 }
 func (this *BaiduTranslator) AsyncTranslate(str string) int {
-	task := &BaiduTransTask{id: transTaskNextId, queryStr: this.queryStr, status: STATUS_NONE}
-	transTaskNextId++
+	baiduTransTaskNextId++
+	task := &BaiduTransTask{id: baiduTransTaskNextId, queryStr: this.queryStr, status: STATUS_NONE}
 	if this.tasks == nil {
 		this.tasks = make(map[int]*BaiduTransTask, 0)
 	}
 
 	//this.tasks = append(this.tasks, task)
-	this.tasks[transTaskNextId] = task
+	this.tasks[baiduTransTaskNextId] = task
 	//task.Start()
 	return task.id
 }
