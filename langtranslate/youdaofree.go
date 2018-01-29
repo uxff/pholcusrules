@@ -1,7 +1,7 @@
 /*
    有道翻译 利用浏览器翻译插件接口
    优点：永久免费 可以POST
-   缺点：长句子要拆开翻译 只能en->zh
+   缺点：长句子要拆开翻译 单个句子不能长于1000字符 只能en->zh
 */
 package langtranslate
 
@@ -15,26 +15,26 @@ import (
 )
 
 const (
-	YOUDAO_API_URL      = "http://fanyi.youdao.com/translate"
-	YOUDAO_API_URL_FULL = "http://fanyi.youdao.com/translate?client=deskdict&keyfrom=chrome.extension&xmlVersion=1.1&dogVersion=1.0&ue=utf8&i=implements%20hiveserver2(thrift%20rpc)%20client%20in%20golang&doctype=xml"
-	YOUDAO_API_COOKIE   = "OUTFOX_SEARCH_USER_ID=1960626865@111.199.186.18; JSESSIONID=abcz62zd30LRdhL_7q3ew"
+	YOUDAOFREE_API_URL      = "http://fanyi.youdao.com/translate"
+	YOUDAOFREE_API_URL_FULL = "http://fanyi.youdao.com/translate?client=deskdict&keyfrom=chrome.extension&xmlVersion=1.1&dogVersion=1.0&ue=utf8&i=implements%20hiveserver2(thrift%20rpc)%20client%20in%20golang&doctype=xml"
+	YOUDAOFREE_API_COOKIE   = "OUTFOX_SEARCH_USER_ID=1960626865@111.199.186.18; JSESSIONID=abcz62zd30LRdhL_7q3ew"
 )
 
-var youdao_cookie = YOUDAO_API_COOKIE
-var youdaoTransTaskNextId = 0
+var youdaofree_cookie = YOUDAOFREE_API_COOKIE
+var youdaofreeTransTaskNextId = 0
 
-type YoudaoTransTask struct {
+type YoudaoFreeTransTask struct {
 }
 
-type YoudaoTranslator struct {
+type YoudaoFreeTranslator struct {
 	fromLang string
 	toLang   string
 	queryStr string
 	retStr   string
-	tasks    map[int]*YoudaoTransTask
+	tasks    map[int]*YoudaoFreeTransTask
 }
 
-type YoudaoTransRes struct {
+type YoudaoFreeTransRes struct {
 	Type            string `json:"type"`
 	ErrorCode       int    `json:"errorCode"`
 	ElapsedTime     int    `json:"elapsedTime"`
@@ -44,25 +44,25 @@ type YoudaoTransRes struct {
 	} `json:"translateResult"`
 }
 
-func (this *YoudaoTranslator) SetApiConfig(conf map[string]interface{}) {
+func (this *YoudaoFreeTranslator) SetApiConfig(conf map[string]interface{}) {
 	cookie, ok := conf["cookie"].(string)
 	if ok {
-		youdao_cookie = cookie + "; timestamp=" + fmt.Sprintf("%d", time.Now().Unix())
+		youdaofree_cookie = cookie + "; timestamp=" + fmt.Sprintf("%d", time.Now().Unix())
 	}
 }
 
-func (this *YoudaoTranslator) SetFromLang(lang string) {
+func (this *YoudaoFreeTranslator) SetFromLang(lang string) {
 	this.fromLang = lang
 }
-func (this *YoudaoTranslator) SetToLang(lang string) {
+func (this *YoudaoFreeTranslator) SetToLang(lang string) {
 	this.toLang = lang
 }
-func (this *YoudaoTranslator) Translate(str string) (string, error) {
+func (this *YoudaoFreeTranslator) Translate(str string) (string, error) {
 
 	params := "client=deskdict&keyfrom=chrome.extension&jsonVersion=1&dogVersion=1.0&ue=utf8&doctype=json&i=" + str
 	contentType := "application/x-www-form-urlencoded"
 
-	transRetOfApi, err := http.Post(YOUDAO_API_URL, contentType, bytes.NewReader([]byte(params)))
+	transRetOfApi, err := http.Post(YOUDAOFREE_API_URL, contentType, bytes.NewReader([]byte(params)))
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +78,7 @@ func (this *YoudaoTranslator) Translate(str string) (string, error) {
 		return "", err
 	}
 
-	youdaoTransRes := new(YoudaoTransRes)
+	youdaoTransRes := new(YoudaoFreeTransRes)
 	err = json.Unmarshal(targetRes, youdaoTransRes)
 	if err != nil {
 		return "", err
@@ -97,10 +97,10 @@ func (this *YoudaoTranslator) Translate(str string) (string, error) {
 	return "", fmt.Errorf("response could not unmarshal:%s...", targetRes[:contentLineAbsLen])
 }
 
-func (this *YoudaoTranslator) AsyncTranslate(str string) int {
+func (this *YoudaoFreeTranslator) AsyncTranslate(str string) int {
 	//transTaskNextId++
-	return youdaoTransTaskNextId
+	return youdaofreeTransTaskNextId
 }
-func (this *YoudaoTranslator) GetTransResult(taskId int) (string, error) {
+func (this *YoudaoFreeTranslator) GetTransResult(taskId int) (string, error) {
 	return "", nil
 }

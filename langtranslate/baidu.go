@@ -1,7 +1,7 @@
 /*
    百度翻译
    优点：每月200万字符内免费
-   缺点：长篇幅，只翻译第一行，需要自行拆开
+   缺点：长篇幅，只翻译第一行，需要自行拆开 单个句子不能长于2000字符
 */
 package langtranslate
 
@@ -82,7 +82,7 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 	contentType := "application/x-www-form-urlencoded"
 
 	salt := fmt.Sprintf("%d", time.Now().Unix())
-	sign := makeSign(map[string]string{"q": str, "salt": salt})
+	sign := this.makeSign(map[string]string{"q": str, "salt": salt})
 	body := "q=" + str + "&from=" + this.fromLang + "&to=" + this.toLang + "&appid=" + baidu_appid + "&salt=" + salt + "&sign=" + sign
 	q, _ := url.ParseQuery(body)
 	bodyEncoded := q.Encode()
@@ -141,7 +141,7 @@ func (this *BaiduTranslator) GetTransResult(taskId int) (ret string, err error) 
 /*
    params = ["q"=>"words for translate"]
 */
-func makeSign(params map[string]string) string {
+func (this *BaiduTranslator) makeSign(params map[string]string) string {
 	//:= fmt.Sprintf("%d", time.Now().Unix())
 
 	longStr := baidu_appid + params["q"] + params["salt"] + baidu_appsecret

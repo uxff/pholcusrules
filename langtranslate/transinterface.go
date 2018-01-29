@@ -17,9 +17,26 @@ const (
 type TRANSLATOR_ID int
 
 const (
-	TRANSLATOR_BAIDU  TRANSLATOR_ID = iota
+	// baidu: http://api.fanyi.baidu.com/api/trans/product/apidoc
+	TRANSLATOR_BAIDU TRANSLATOR_ID = iota
+	// google:
 	TRANSLATOR_GOOGLE TRANSLATOR_ID = iota
+	// youdao chrome extension:
+	TRANSLATOR_YOUDAO_FREE TRANSLATOR_ID = iota
+	// youdao:
 	TRANSLATOR_YOUDAO TRANSLATOR_ID = iota
+	// microsoft azure: https://docs.microsoft.com/en-us/azure/cognitive-services/translator/
+	TRANSLATOR_MICROSOFT TRANSLATOR_ID = iota
+	// xunfei: http://www.xfyun.cn/services/mtranslate
+	TRANSLATOR_XFYUN TRANSLATOR_ID = iota
+	// tencent: https://cloud.tencent.com/document/product/551
+	TRANSLATOR_TENCENT TRANSLATOR_ID = iota
+	// aliyun: no translator api support, but third part supported
+	//TRANSLATOR_ALIYUN TRANSLATOR_ID = iota // use iciba youdao baidu//
+	//
+	TRANSLATOR_ICIBA TRANSLATOR_ID = iota
+	// yeecloud: https://market.aliyun.com/products/57124001/cmapi014709.html?spm=5176.730005.0.0.mUzPbY
+	TRANSLATOR_YEECLOUD TRANSLATOR_ID = iota
 )
 
 type Translator interface {
@@ -32,19 +49,16 @@ type Translator interface {
 	//AddTranslateTask(str string) *TranslatorTask
 }
 
-/*
-   //auto splite long string to litle string, get result each and gother finally
-*/
-
 func SelectTranslator(id TRANSLATOR_ID) Translator {
 	switch id {
 	case TRANSLATOR_BAIDU:
 		return &BaiduTranslator{}
 	case TRANSLATOR_GOOGLE:
 		//return &GoogleTranslator{}
+	case TRANSLATOR_YOUDAO_FREE:
+		return &YoudaoFreeTranslator{}
 	case TRANSLATOR_YOUDAO:
 		return &YoudaoTranslator{}
-
 	}
 	return nil
 }
