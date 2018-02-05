@@ -81,6 +81,8 @@ func init() {
 func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error) {
 	succNum = 0
 
+	insertedIds := make([]int, 0)
+
 	//session := Orm.NewSession()
 	for _, item := range items {
 
@@ -134,19 +136,20 @@ func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error)
 			continue
 		}
 		//fmt.Println("insert success: num=", num, "all=", succNum, "id=", item.Id)
+		insertedIds = append(insertedIds, item.Id)
 
 		succNum++
 
 	}
 
-	logs.Log.Debug("all %v saved", succNum)
+	logs.Log.Debug("all %v saved, ids=%v", succNum, insertedIds)
 	return
 }
 
 func MakeArticleUrl(a *ArticleEntity) string {
-    if defaultUrlMaker != nil {
-        return defaultUrlMaker(a)
-    }
+	if defaultUrlMaker != nil {
+		return defaultUrlMaker(a)
+	}
 	//strings.a.Id
 	sign := "ignorethesestrings"
 	str := "http://xahoo.xenith.top/index.php?r=article/show&id=" + fmt.Sprintf("%d", a.Id) + "&sign=" + sign
@@ -169,7 +172,6 @@ func SetAuthor(v string) {
 	defaultAuthor = v
 }
 
-func SetUrlMaker(maker func(*ArticleEntity)string) {
-    defaultUrlMaker = maker
+func SetUrlMaker(maker func(*ArticleEntity) string) {
+	defaultUrlMaker = maker
 }
-
