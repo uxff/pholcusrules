@@ -196,7 +196,13 @@ var Hejinx = &Spider{
 					}
 					textContent := ctx.GetText()
 					tempContent := []byte(textContent)
-					logs.Log.Warning("the textContent len=%v %s", len(textContent), string(tempContent[:32]))
+					tempContentSplitLen := len(tempContent)
+					if tempContentSplitLen > 32 {
+						tempContentSplitLen = 32
+					}
+
+
+					logs.Log.Warning("the textContent len=%v %s", len(textContent), string(tempContent[:tempContentSplitLen]))
 
 					// find formhash
 					formhash := ""
