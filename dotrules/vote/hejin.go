@@ -1,4 +1,4 @@
-package otherrule
+package articlewriter
 
 // 基础包
 import (
@@ -200,7 +200,6 @@ var Hejinx = &Spider{
 					if tempContentSplitLen > 32 {
 						tempContentSplitLen = 32
 					}
-
 
 					logs.Log.Warning("the textContent len=%v %s", len(textContent), string(tempContent[:tempContentSplitLen]))
 

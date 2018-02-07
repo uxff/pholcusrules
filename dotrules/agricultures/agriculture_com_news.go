@@ -9,9 +9,9 @@ import (
 	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
 	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
+	articlewriter "github.com/uxff/pholcusrules/articlewriter"
 	"github.com/uxff/pholcusrules/consts"
 	"github.com/uxff/pholcusrules/langtranslate"
-	wxmodel "github.com/uxff/pholcusrules/wx100000p/model"
 
 	// net包
 	"net/http" //设置http.Header
@@ -233,7 +233,7 @@ var Agriculture_com = &Spider{
 							logs.Log.Warning("json marshal error:%v", err)
 						}
 
-						writer := &wxmodel.ArticleWriter{}
+						writer := &articlewriter.ArticleWriter{}
 
 						_, err = writer.Write(buf)
 						if err != nil {
@@ -321,7 +321,7 @@ var Agriculture_com = &Spider{
 							logs.Log.Warning("json marshal error:%v", err)
 						}
 
-						writer := &wxmodel.ArticleWriter{}
+						writer := &articlewriter.ArticleWriter{}
 
 						_, err = writer.Write(buf)
 						if err != nil {

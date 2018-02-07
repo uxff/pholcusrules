@@ -1,4 +1,4 @@
-package otherrule
+package qzone
 
 // 基础包
 import (

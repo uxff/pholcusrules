@@ -1,4 +1,4 @@
-package model
+package articlewriter
 
 import xorm "github.com/go-xorm/xorm"
 import core "github.com/go-xorm/core"

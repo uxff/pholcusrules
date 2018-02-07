@@ -1,4 +1,4 @@
-package wx100000p
+package kuaidaili
 
 // 基础包
 import (

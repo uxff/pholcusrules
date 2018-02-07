@@ -18,13 +18,13 @@ import (
 	"github.com/henrylee2cn/pholcus/runtime/status"
 	"github.com/henrylee2cn/pholcus/web"
 
-	_ "github.com/uxff/pholcusrules/agricultures"
-	_ "github.com/uxff/pholcusrules/duanwenxue"
-	_ "github.com/uxff/pholcusrules/kuaidaili"
-	_ "github.com/uxff/pholcusrules/picsetcrawler"
-	_ "github.com/uxff/pholcusrules/qzone"
-	_ "github.com/uxff/pholcusrules/vote"
-	_ "github.com/uxff/pholcusrules/wx100000p"
+	_ "github.com/uxff/pholcusrules/dotrules/agricultures"
+	_ "github.com/uxff/pholcusrules/dotrules/duanwenxue"
+	_ "github.com/uxff/pholcusrules/dotrules/kuaidaili"
+	_ "github.com/uxff/pholcusrules/dotrules/picsetcrawler"
+	_ "github.com/uxff/pholcusrules/dotrules/qzone"
+	_ "github.com/uxff/pholcusrules/dotrules/vote"
+	_ "github.com/uxff/pholcusrules/dotrules/wx100000p"
 )
 
 var (

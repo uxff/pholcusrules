@@ -1,4 +1,4 @@
-package otherrule
+package qzone
 
 var BlogIds = []int{
 	1236478841,
