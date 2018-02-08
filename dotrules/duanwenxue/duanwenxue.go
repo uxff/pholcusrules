@@ -45,7 +45,7 @@ func init() {
 
 var Duanwenxue = &Spider{
 	Name:        "duanwenxue.com",
-	Description: "duanwenxue.com",
+	Description: "duanwenxue.com 输入格式如: https://www.duanwenxue.com/duanwen/geyan/",
 	// Pausetime:    300,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
@@ -54,7 +54,7 @@ var Duanwenxue = &Spider{
 		Root: func(ctx *Context) {
 			param := ctx.GetKeyin()
 			if len(param) < 5 {
-				logs.Log.Warning("自定义输入的参数不正确！应该是https://www.duanwenxue.com/duanwen/geyan/")
+				logs.Log.Warning("自定义输入的参数不正确！应该是 https://www.duanwenxue.com/duanwen/geyan/")
 				//return
 				param = "https://www.duanwenxue.com/duanwen/geyan/"
 			}
@@ -196,7 +196,7 @@ var Duanwenxue = &Spider{
 						"author":      author,
 						"surface_url": addresses,
 						"outer_url":   ctx.GetUrl(),
-						"origin":      "wx100000p",
+						"origin":      "duanwenxue",
 						"remark":      keywords,
 						"abstract":    abstract,
 						"content":     content,

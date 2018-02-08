@@ -130,6 +130,8 @@ var Wx100000p = &Spider{
 						keywords = keywords + "," + q.Text()
 					})
 
+					keywords = strings.Trim(keywords, ", \t\r\n")
+
 					// 输出到mysql
 					artInfo := map[string]string{
 						"title":       title,
