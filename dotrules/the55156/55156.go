@@ -342,7 +342,7 @@ func DownloadObject(url string, saveDir string, saveName string) (savedPath stri
 		}
 	}
 
-	savedPath = saveDir + "/" + saveName + ext
+	savedPath = saveDir + "/" + saveName
 
 	fhandle, err := os.Create(savedPath) //, os.O_CREATE|os.O_WRONLY, os.ModePerm)
 
@@ -371,7 +371,7 @@ func FixUrl(url string, route string) (finalUrl string) {
 	} else {
 		for i := len(route) - 1; i > 0; i-- {
 			if route[i] == '/' {
-				route = route[i+1:]
+				route = route[:i+1]
 				break
 			}
 		}
