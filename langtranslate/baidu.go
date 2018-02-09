@@ -1,7 +1,7 @@
 /*
    百度翻译
    优点：每月200万字符内免费
-   缺点：长篇幅，只翻译第一行，需要自行拆开 单个句子不能长于2000字符
+   缺点：长篇幅，只翻译第一行，需要自行拆开 单个句子不能长于2000字符 接口每秒不能超过5次
 */
 package langtranslate
 
@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -28,12 +29,17 @@ const (
 	BAIDU_API_URL_HTTPS = "https://api.fanyi.baidu.com/api/trans/vip/translate"
 )
 
+const MAX_TRY_TIMES = 5
+
 type BaiduTransTask struct {
-	id       int
-	queryStr string
-	retStr   string
-	status   int
-	failMsg  string
+	id        int
+	fromLang  string
+	toLang    string
+	queryStr  string
+	retStr    string
+	status    int
+	failMsg   string
+	failTimes int
 }
 
 type BaiduTranslator struct {
@@ -57,6 +63,14 @@ var baiduTransTaskNextId = 0
 var baidu_appid string
 var baidu_appsecret string
 
+//var taskFinishChan chan *BaiduTransTask
+
+func init() {
+	//if this.tasks == nil {
+	//	this.tasks = make(map[int]*BaiduTransTask, 0)
+	//}
+}
+
 func (this *BaiduTranslator) SetApiConfig(conf map[string]interface{}) {
 	baidu_appid, _ = conf["appid"].(string)
 	baidu_appsecret, _ = conf["appsecret"].(string)
@@ -65,10 +79,94 @@ func (this *BaiduTranslator) SetApiConfig(conf map[string]interface{}) {
 func (this *BaiduTranslator) SetFromLang(lang string) {
 	this.fromLang = lang
 }
+
 func (this *BaiduTranslator) SetToLang(lang string) {
 	this.toLang = lang
 }
+
 func (this *BaiduTranslator) Translate(str string) (string, error) {
+	if this.tasks == nil {
+		this.tasks = make(map[int]*BaiduTransTask, 0)
+	}
+
+	taskId := this.AsyncTranslate(str)
+	this.tasks[taskId].Wait(time.Second * 10)
+	if this.tasks[taskId].status == STATUS_OK {
+		return this.tasks[taskId].retStr, nil
+	}
+
+	return this.tasks[taskId].retStr, fmt.Errorf(this.tasks[taskId].failMsg)
+	//return this.retStr, err
+}
+func (this *BaiduTranslator) AsyncTranslate(str string) int {
+	mu := &sync.Mutex{}
+	mu.Lock()
+	defer mu.Unlock()
+
+	baiduTransTaskNextId++
+	task := &BaiduTransTask{id: baiduTransTaskNextId, queryStr: str, status: STATUS_NONE, fromLang: this.fromLang, toLang: this.toLang}
+	go func() {
+		this.tasks[baiduTransTaskNextId] = task
+		task.Start()
+	}()
+
+	//this.tasks = append(this.tasks, task)
+	//task.Start()
+	return task.id
+}
+
+func (this *BaiduTranslator) GetTransResult(taskId int) (ret string, err error) {
+	theTask, ok := this.tasks[taskId]
+	if !ok {
+		err = fmt.Errorf("task id not exist:%v", taskId)
+		return "", err
+	}
+
+	theTask.Wait(time.Second * 10)
+	return theTask.GetResult()
+	//return ret, err
+}
+
+/*
+   params = ["q"=>"words for translate"]
+*/
+func makeSign(params map[string]string) string {
+	//:= fmt.Sprintf("%d", time.Now().Unix())
+
+	longStr := baidu_appid + params["q"] + params["salt"] + baidu_appsecret
+
+	h := md5.New()
+	h.Write([]byte(longStr))
+	signByte := h.Sum(nil)
+
+	sign := fmt.Sprintf("%x", signByte)
+	return sign
+}
+
+func (this *BaiduTransTask) Start() {
+	if this.status == STATUS_NONE {
+		this.status = STATUS_DOING
+	}
+
+	if this.status == STATUS_OK {
+		return
+	}
+
+	if this.failTimes > MAX_TRY_TIMES {
+		return
+	}
+
+	for this.failTimes = 0; this.failTimes < MAX_TRY_TIMES; this.failTimes++ {
+		_, err := this.RunTrans()
+		if err == nil {
+			this.status = STATUS_OK
+			break
+		}
+		this.failMsg = err.Error()
+	}
+}
+
+func (this *BaiduTransTask) RunTrans() (string, error) {
 
 	if this.fromLang == "" {
 		this.fromLang = "auto"
@@ -77,13 +175,13 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 		this.fromLang = "auto"
 	}
 
-	this.queryStr = str
+	//this.queryStr
 
 	contentType := "application/x-www-form-urlencoded"
 
 	salt := fmt.Sprintf("%d", time.Now().Unix())
-	sign := this.makeSign(map[string]string{"q": str, "salt": salt})
-	body := "q=" + str + "&from=" + this.fromLang + "&to=" + this.toLang + "&appid=" + baidu_appid + "&salt=" + salt + "&sign=" + sign
+	sign := makeSign(map[string]string{"q": this.queryStr, "salt": salt})
+	body := "q=" + this.queryStr + "&from=" + this.fromLang + "&to=" + this.toLang + "&appid=" + baidu_appid + "&salt=" + salt + "&sign=" + sign
 	q, _ := url.ParseQuery(body)
 	bodyEncoded := q.Encode()
 
@@ -113,51 +211,46 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 	//fmt.Println("TRANS OVER:", this.retStr, err)
 
 	return this.retStr, err
+
 }
-func (this *BaiduTranslator) AsyncTranslate(str string) int {
-	baiduTransTaskNextId++
-	task := &BaiduTransTask{id: baiduTransTaskNextId, queryStr: this.queryStr, status: STATUS_NONE}
-	if this.tasks == nil {
-		this.tasks = make(map[int]*BaiduTransTask, 0)
+
+// you should use channel to wait, you should use context to timeout
+func (this *BaiduTransTask) Wait(timeout time.Duration) bool {
+	tChan := time.After(timeout)
+
+	for {
+		select {
+		case <-tChan:
+			return false
+		default:
+			if this.status == STATUS_FAIL || this.status == STATUS_OK {
+				return true
+			}
+			time.Sleep(1 * time.Second)
+		}
 	}
-
-	//this.tasks = append(this.tasks, task)
-	this.tasks[baiduTransTaskNextId] = task
-	//task.Start()
-	return task.id
-}
-func (this *BaiduTranslator) GetTransResult(taskId int) (ret string, err error) {
-	theTask, ok := this.tasks[taskId]
-	if !ok {
-		err = fmt.Errorf("task id not exist:%v", taskId)
-		return "", err
-	}
-
-	theTask.Wait()
-	return theTask.GetResult()
-	//return ret, err
-}
-
-/*
-   params = ["q"=>"words for translate"]
-*/
-func (this *BaiduTranslator) makeSign(params map[string]string) string {
-	//:= fmt.Sprintf("%d", time.Now().Unix())
-
-	longStr := baidu_appid + params["q"] + params["salt"] + baidu_appsecret
-
-	h := md5.New()
-	h.Write([]byte(longStr))
-	signByte := h.Sum(nil)
-
-	sign := fmt.Sprintf("%x", signByte)
-	return sign
-}
-
-func (this *BaiduTransTask) Wait() bool {
 	return false
 }
 
+func (this *BaiduTransTask) GetStatus() int {
+	return this.status
+}
+
 func (this *BaiduTransTask) GetResult() (string, error) {
+
+	switch this.status {
+	case STATUS_NONE:
+		if this.failTimes < MAX_TRY_TIMES {
+			go this.Start()
+		}
+		return "", fmt.Errorf("its doing, not done yet")
+	case STATUS_DOING:
+		return "", fmt.Errorf("its doing, not done yet")
+	case STATUS_OK:
+		return this.retStr, nil
+	case STATUS_FAIL:
+		return "", fmt.Errorf("its failed %d times, now trying again", this.failTimes)
+	}
+
 	return "", nil
 }
