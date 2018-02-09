@@ -84,7 +84,7 @@ var The55156 = &Spider{
 				ParseFunc: func(ctx *Context) {
 					// like: http://www.55156.com/meinvtupian/bijinimeinv.html
 
-					logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
+					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
 
 					query := ctx.GetDom()
 					lis := query.Find(".labelbox_pic").Find("ul").Find("li") // 不能写 ".thumb a"
@@ -120,7 +120,7 @@ var The55156 = &Spider{
 							// save to local
 							MakeDir(DOWNLOAD_ROOT + tagName)
 
-							logs.Log.Warning("extract tag url, img=%v, %v, %v", url, img, tagName)
+							//logs.Log.Warning("extract tag url, img=%v, %v, %v", url, img, tagName)
 
 							// cookie
 							cookies := ""
@@ -167,7 +167,7 @@ var The55156 = &Spider{
 				},
 				ParseFunc: func(ctx *Context) {
 
-					logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
+					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
 
 					query := ctx.GetDom()
 					lis := query.Find("#imgList").Find("ul").Find("li") // 不能写 ".thumb a"
@@ -201,7 +201,7 @@ var The55156 = &Spider{
 							// save to local
 							MakeDir(DOWNLOAD_ROOT + picsetName)
 
-							logs.Log.Warning("extract picset url, img=%v, %v, %v", url, img, picsetName)
+							//logs.Log.Warning("extract picset url, img=%v, %v, %v", url, img, picsetName)
 
 							// cookie
 							cookies := ""
@@ -256,7 +256,7 @@ var The55156 = &Spider{
 					imgUrl = FixUrl(imgUrl, ctx.GetUrl())
 
 					DownloadObject(imgUrl, saveDir, "")
-					logs.Log.Warning("IN %v imgUrl=%v", picsetName, imgUrl)
+					//logs.Log.Warning("IN %v imgUrl=%v", picsetName, imgUrl)
 
 					query.Find(".pages").Find("ul").Find("li").Each(func(i int, s *goquery.Selection) {
 						nextPageUrl, _ := s.Find("a").Attr("href")
@@ -318,7 +318,7 @@ func DownloadObject(url string, saveDir string, saveName string) (savedPath stri
 	contentType := res.Header.Get("Content-Type")
 	exts, err := mime.ExtensionsByType(contentType)
 
-	logs.Log.Warning("got mime type from %v=%v err=%v", contentType, exts, err)
+	//logs.Log.Warning("got mime type from %v=%v err=%v", contentType, exts, err)
 	ext := ""
 	if len(exts) > 0 {
 		ext = exts[0]
@@ -340,6 +340,10 @@ func DownloadObject(url string, saveDir string, saveName string) (savedPath stri
 			md5er.Write([]byte(url))
 			saveName = hex.EncodeToString(md5er.Sum(nil)) + ext
 		}
+	}
+
+	if strings.IndexByte(saveName, '.') < 0 {
+		saveName = saveName + ext
 	}
 
 	savedPath = saveDir + "/" + saveName
