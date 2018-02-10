@@ -244,7 +244,7 @@ var The55156 = &Spider{
 						}
 
 						url, _ := s.Find("a").Eq(0).Attr("href")
-						img, _ := s.Find("a img").Attr("src")
+						img, _ := s.Find("img").Eq(0).Attr("src")
 						picsetName, _ := s.Find("a").Eq(0).Attr("title")
 						picsetName = strings.Trim(picsetName, " \t")
 						if len(picsetName) == 0 {
