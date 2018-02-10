@@ -41,7 +41,7 @@ func init() {
 
 var Kuaidaili = &Spider{
 	Name:        "Kuaidaili",
-	Description: "Kuaidaili KEYIN: cookie",
+	Description: "Kuaidaili KEYIN: [cookie], set pause time: 2s or bigger",
 	// Pausetime:    300,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
@@ -75,9 +75,9 @@ var Kuaidaili = &Spider{
 			"FREE_INHA": {
 				ItemFields: []string{
 					"HTTP_PROXY",
+					"PROTO",
 					"IP",
 					"PORT",
-					"PROTO",
 				},
 				ParseFunc: func(ctx *Context) {
 					cookie := ctx.GetCookie()
@@ -108,9 +108,9 @@ var Kuaidaili = &Spider{
 						})
 						ctx.Output(map[int]interface{}{
 							0: fmt.Sprintf("%s://%v:%v", strings.ToLower(proto), ip, port),
-							1: ip,
-							2: port,
-							3: proto,
+							1: proto,
+							2: ip,
+							3: port,
 						})
 
 						//logs.Log.Warning("tr ok:%v", elem.Text())

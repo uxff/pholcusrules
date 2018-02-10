@@ -5,6 +5,8 @@ curl http://www.55156.com
 需求： 下载静态网站中的图集
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
+TODO::
+    - auto recognize tag url or picset url
 
 */
 
@@ -36,7 +38,7 @@ const (
 	PUBLIC_COOKIE = ""
 	DOWNLOAD_ROOT = "./55156.com/"
 	HOME_URL      = "http://www.55156.com/"
-	FIRST_PAGE    = "http://www.55156.com/meinvtupian/"
+	FIRST_PAGE    = "http://www.55156.com/"
 )
 
 func init() {
@@ -64,7 +66,7 @@ var The55156 = &Spider{
 
 			ctx.AddQueue(&request.Request{
 				Url:  entranceUrl,
-				Rule: "TAGLIST",
+				Rule: "HOMEPAGE",
 				Header: http.Header{
 					"Cookie":     []string{PUBLIC_COOKIE},
 					"User-Agent": []string{consts.AGENT_PUBLIC},
@@ -74,6 +76,69 @@ var The55156 = &Spider{
 		},
 
 		Trunk: map[string]*Rule{
+			"HOMEPAGE": {
+				ParseFunc: func(ctx *Context) {
+					// home page like: http://www.55156.com/
+					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
+
+					query := ctx.GetDom()
+					lis := query.Find(".nav").Find("ul").Find("li") // 不能写 ".thumb a"
+					logs.Log.Warning("the nav li =%v:%v", lis.Length(), lis.Text())
+					lis.Each(func(i int, s *goquery.Selection) {
+						if i == 0 {
+							// 0==homepage
+							return
+						}
+
+						url, _ := s.Find("a").Eq(0).Attr("href")
+						tagName := s.Find("a").Eq(0).Text()
+						tagName = strings.Trim(tagName, " \t")
+
+						//logs.Log.Warning("find a picset list(%v):%v", tagName, url)
+
+						if len(url) > 0 {
+							//logs.Log.Warning("get a set url:%v", url)
+							url = FixUrl(url, ctx.GetUrl())
+
+							// download in disk
+							// save to local
+							MakeDir(DOWNLOAD_ROOT + tagName)
+
+							//logs.Log.Warning("extract tag url, img=%v, %v, %v", url, img, tagName)
+
+							// cookie
+							cookies := ""
+							cookie := ctx.Response.Cookies()
+							for _, c := range cookie {
+								cookies += c.Name + "=" + c.Value + "; "
+							}
+
+							logs.Log.Warning("will request home->picsetlist: %v", url)
+
+							// queue request the picset detail
+							ctx.AddQueue(
+								&request.Request{
+									Url:  url,
+									Rule: "PICSETLIST",
+									Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + tagName, "TAGNAME": tagName},
+									Header: http.Header{
+										//"Accept-Language":           []string{"zh-CN,zh"},
+										"Cookie":     []string{cookies},
+										"User-Agent": []string{consts.AGENT_PUBLIC},
+										"Referer":    []string{HOME_URL},
+										//"Upgrade-Insecure-Requests": []string{"1"},
+										//"Cache-Control":             []string{"no-cache"},
+									},
+									DownloaderID: 0,
+								},
+							)
+
+							//DownloadObject(img, DOWNLOAD_ROOT+tagName, "thumb")
+						}
+
+					})
+				},
+			},
 
 			"TAGLIST": {
 				ItemFields: []string{
@@ -83,14 +148,13 @@ var The55156 = &Spider{
 				},
 				ParseFunc: func(ctx *Context) {
 					// like: http://www.55156.com/meinvtupian/bijinimeinv.html
-
 					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
 
 					query := ctx.GetDom()
 					lis := query.Find(".labelbox_pic").Find("ul").Find("li") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 10 {
-							return
+							//return
 						}
 
 						url, _ := s.Find("a").Eq(0).Attr("href")
@@ -139,7 +203,7 @@ var The55156 = &Spider{
 								&request.Request{
 									Url:  url,
 									Rule: "PICSETLIST",
-									Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + tagName, "TAGNAME": tagName},
+									Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + tagName + "/", "TAGNAME": tagName},
 									Header: http.Header{
 										//"Accept-Language":           []string{"zh-CN,zh"},
 										"Cookie":     []string{cookies},
@@ -167,13 +231,16 @@ var The55156 = &Spider{
 				},
 				ParseFunc: func(ctx *Context) {
 
+					// like: http://www.55156.com/weimeiyijing/fengjingtupian/
 					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
+
+					saveDir := ctx.GetTemp("DIR", DOWNLOAD_ROOT).(string)
 
 					query := ctx.GetDom()
 					lis := query.Find("#imgList").Find("ul").Find("li") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 10 {
-							return
+							//return
 						}
 
 						url, _ := s.Find("a").Eq(0).Attr("href")
@@ -199,7 +266,7 @@ var The55156 = &Spider{
 
 							// download in disk
 							// save to local
-							MakeDir(DOWNLOAD_ROOT + picsetName)
+							MakeDir(saveDir + "/" + picsetName)
 
 							//logs.Log.Warning("extract picset url, img=%v, %v, %v", url, img, picsetName)
 
@@ -220,7 +287,7 @@ var The55156 = &Spider{
 								&request.Request{
 									Url:  url,
 									Rule: "PICSET",
-									Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + picsetName, "PICSETNAME": picsetName},
+									Temp: map[string]interface{}{"DIR": saveDir + "/" + picsetName + "/", "PICSETNAME": picsetName},
 									Header: http.Header{
 										//"Accept-Language":           []string{"zh-CN,zh"},
 										"Cookie":     []string{cookies},
@@ -233,7 +300,7 @@ var The55156 = &Spider{
 								},
 							)
 
-							DownloadObject(img, DOWNLOAD_ROOT+picsetName, "thumb")
+							DownloadObject(img, saveDir+picsetName, "thumb")
 						}
 
 					})
@@ -247,10 +314,11 @@ var The55156 = &Spider{
 					"IMAGEURL",
 				},
 				ParseFunc: func(ctx *Context) {
+					// picset like: http://www.55156.com/weimeiyijing/fengjingtupian/206208.html
 					query := ctx.GetDom()
 
 					picsetName := ctx.GetTemp("PICSETNAME", "").(string)
-					saveDir := ctx.GetTemp("DIR", "").(string)
+					saveDir := ctx.GetTemp("DIR", DOWNLOAD_ROOT+picsetName).(string)
 
 					imgUrl, _ := query.Find("#picBody").Find("a img").Attr("src")
 					imgUrl = FixUrl(imgUrl, ctx.GetUrl())
@@ -265,7 +333,7 @@ var The55156 = &Spider{
 							&request.Request{
 								Url:  nextPageUrl,
 								Rule: "PICSET",
-								Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + picsetName, "PICSETNAME": picsetName},
+								Temp: map[string]interface{}{"DIR": saveDir, "PICSETNAME": picsetName},
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},
 									//"Cookie":     []string{cookies},
