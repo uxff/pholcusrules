@@ -12,4 +12,5 @@ const (
 type PicsetConfig struct {
 	Name    string `json:"name"`
 	Pubdate string `json:"pubdate"`
+	Source  string `json:"source"`
 }

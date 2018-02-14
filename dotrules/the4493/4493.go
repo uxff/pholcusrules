@@ -95,7 +95,7 @@ var The4493 = &Spider{
 					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
 
 					query := ctx.GetDom()
-					lis := query.Find(".fx_new ").Find("ul").Find("li") // 不能写 ".thumb a"
+					lis := query.Find(".fx_new").Find("ul").Find("li") // 不能写 ".thumb a"
 					logs.Log.Warning("the nav li =%v", lis.Length())
 
 					lis.Each(func(i int, s *goquery.Selection) {
@@ -111,7 +111,7 @@ var The4493 = &Spider{
 						//logs.Log.Warning("find a picset list(%v):%v", tagName, url)
 						url = FixUrl(url, ctx.GetUrl())
 
-						imgThumb, _ := s.Find("a").Eq(0).Find("img").Attr("src")
+						imgThumb, _ := s.Find("img").Attr("src")
 						imgThumb = FixUrl(imgThumb, ctx.GetUrl())
 
 						// download in disk , save to local
