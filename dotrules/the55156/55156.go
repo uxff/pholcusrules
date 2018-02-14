@@ -300,7 +300,7 @@ var The55156 = &Spider{
 								},
 							)
 
-							DownloadObject(img, saveDir+picsetName, "thumb")
+							DownloadObject(img, saveDir+"/"+picsetName, "thumb")
 						}
 
 					})
