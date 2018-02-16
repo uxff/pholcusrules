@@ -21,6 +21,7 @@ import (
 	"os"
 	//"strconv"
 	"strings"
+    //"sync"
 
 	//"golang.org/x/net/html"
 
@@ -33,25 +34,36 @@ import (
 	"github.com/uxff/pholcusrules/consts"
 )
 
+type AirConfig struct {
+    Name string
+    Domain string
+    HomePage string
+    FirstPage string
+    DownloadRoot string
+    Cookie string
+}
+
 var (
-	THE_DOMAIN            = ""
-	PRIVATE_COOKIE        = ""
-	THE_HOME_URL   string = ""
-	THE_FIRST_PAGE string = ""
-	DOWNLOAD_ROOT  string = ""
+    AIR_CONFIGS [string]*AirConfig = make([string]*AirConfig, 0)
 )
 
 func init() {
-	THE_DOMAIN = "www.airtmv.com"
-	DOWNLOAD_ROOT = fmt.Sprintf("./%s/", THE_DOMAIN)
-	HOME_URL = "http://www.airtmv.com/"
-	FIRST_PAGE = "http://www.airtmv.com/"
+    config := &AirConfig{
+        Name :"airtmv.com",
+        Domain:"airtmv.com",
+        HomePage:"http://www.airtmv.com/",
+        FirstPage: "http://www.airtmv.com/",
+    }
+    
+    config.DownloadRoot = fmt.Sprintf("./%s/", config.Domain)
 
+    AIR_CONFIGS[config.Name] = config
+    The4493.Name = config.Name
 	The4493.Register()
 }
 
 var The4493 = &Spider{
-	Name:         THE_DOMAIN,
+	//Name:         THE_DOMAIN,
 	Description:  THE_DOMAIN + " no need input",
 	Pausetime:    300,
 	Keyin:        KEYIN,
@@ -65,9 +77,11 @@ var The4493 = &Spider{
 			if len(keyIn) > 4 {
 				entranceUrl = keyIn
 			}
+            
+            
 
 			logs.Log.Warning("start with url:%v", entranceUrl)
-			MakeDir(DOWNLOAD_ROOT)
+			MakeDir(AIR_CONFIGS[ctx.GetName()].DownloadRoot)
 
 			ctx.AddQueue(&request.Request{
 				Url:  entranceUrl,
