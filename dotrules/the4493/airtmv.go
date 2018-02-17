@@ -11,17 +11,17 @@ PICSETNAME,IMG_OF_PICSET
 
 // 基础包
 import (
-	"crypto/md5"
-	"encoding/hex"
+	//"crypto/md5"
+	//"encoding/hex"
 	"fmt"
-	"io"
-	"mime"
+	//"io"
+	//"mime"
 	//"io/ioutil"
 	"net/http"
-	"os"
+	//"os"
 	//"strconv"
 	"strings"
-    //"sync"
+	//"sync"
 
 	//"golang.org/x/net/html"
 
@@ -31,40 +31,29 @@ import (
 
 	. "github.com/henrylee2cn/pholcus/app/spider" //必需
 
-	"github.com/uxff/pholcusrules/consts"
-)
-
-type AirConfig struct {
-    Name string
-    Domain string
-    HomePage string
-    FirstPage string
-    DownloadRoot string
-    Cookie string
-}
-
-var (
-    AIR_CONFIGS [string]*AirConfig = make([string]*AirConfig, 0)
+	helper "github.com/uxff/pholcusrules/consts"
 )
 
 func init() {
-    config := &AirConfig{
-        Name :"airtmv.com",
-        Domain:"airtmv.com",
-        HomePage:"http://www.airtmv.com/",
-        FirstPage: "http://www.airtmv.com/",
-    }
-    
-    config.DownloadRoot = fmt.Sprintf("./%s/", config.Domain)
+	config := &helper.AirConfig{
+		Name:      "airtmv.com",
+		Domain:    "airtmv.com",
+		HomePage:  "http://www.airtmv.com/",
+		FirstPage: "http://www.airtmv.com/",
+	}
 
-    AIR_CONFIGS[config.Name] = config
-    The4493.Name = config.Name
-	The4493.Register()
+	config.DownloadRoot = fmt.Sprintf("./%s/", config.Name)
+
+	helper.AIR_CONFIGS[config.Name] = config
+	TheAirtmv.Name = config.Name
+	TheAirtmv.Description = config.Domain
+
+	TheAirtmv.Register()
 }
 
-var The4493 = &Spider{
+var TheAirtmv = &Spider{
 	//Name:         THE_DOMAIN,
-	Description:  THE_DOMAIN + " no need input",
+	//Description:  THE_DOMAIN + " no need input",
 	Pausetime:    300,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
@@ -72,24 +61,22 @@ var The4493 = &Spider{
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
 
-			entranceUrl := FIRST_PAGE
+			entranceUrl := helper.AIR_CONFIGS[ctx.GetName()].FirstPage
 			keyIn := ctx.GetKeyin()
 			if len(keyIn) > 4 {
 				entranceUrl = keyIn
 			}
-            
-            
 
 			logs.Log.Warning("start with url:%v", entranceUrl)
-			MakeDir(AIR_CONFIGS[ctx.GetName()].DownloadRoot)
+			helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot)
 
 			ctx.AddQueue(&request.Request{
 				Url:  entranceUrl,
 				Rule: "TAGLIST",
 				Header: http.Header{
-					"Cookie":     []string{PRIVATE_COOKIE},
-					"User-Agent": []string{consts.AGENT_PUBLIC},
-					"Referer":    []string{HOME_URL},
+					"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
+					"User-Agent": []string{helper.AGENT_PUBLIC},
+					"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
 				},
 			})
 		},
@@ -116,13 +103,13 @@ var The4493 = &Spider{
 						}
 
 						//logs.Log.Warning("find a picset list(%v):%v", tagName, url)
-						url = FixUrl(url, ctx.GetUrl())
+						url = helper.FixUrl(url, ctx.GetUrl())
 
 						imgThumb, _ := s.Find("img").Attr("src")
-						imgThumb = FixUrl(imgThumb, ctx.GetUrl())
+						imgThumb = helper.FixUrl(imgThumb, ctx.GetUrl())
 
 						// download in disk , save to local
-						MakeDir(DOWNLOAD_ROOT + tagName)
+						helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName)
 
 						//SaveConfig()
 
@@ -142,12 +129,12 @@ var The4493 = &Spider{
 							&request.Request{
 								Url:  url,
 								Rule: "PICSETLIST",
-								Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + tagName, "TAGNAME": tagName},
+								Temp: map[string]interface{}{"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName, "TAGNAME": tagName},
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},
 									"Cookie":     []string{cookies},
-									"User-Agent": []string{consts.AGENT_PUBLIC},
-									"Referer":    []string{HOME_URL},
+									"User-Agent": []string{helper.AGENT_PUBLIC},
+									"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
 									//"Upgrade-Insecure-Requests": []string{"1"},
 									//"Cache-Control":             []string{"no-cache"},
 								},
@@ -155,17 +142,13 @@ var The4493 = &Spider{
 							},
 						)
 
-						DownloadObject(imgThumb, DOWNLOAD_ROOT+tagName, "thumb")
+						helper.DownloadObject(imgThumb, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName, "thumb")
 
+					})
 				},
 			},
 
 			"TAGLIST": {
-				ItemFields: []string{
-					"TAGNAME",
-					"TAGURL",
-					"TAGTHUMB",
-				},
 				ParseFunc: func(ctx *Context) {
 					// tag list like: https://www.4493.com/star/mihuanmeinv/
 					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
@@ -185,13 +168,13 @@ var The4493 = &Spider{
 						}
 
 						//logs.Log.Warning("find a picset list(%v):%v", tagName, url)
-						url = FixUrl(url, ctx.GetUrl())
+						url = helper.FixUrl(url, ctx.GetUrl())
 
 						imgThumb, _ := s.Find("img").Attr("src")
-						imgThumb = FixUrl(imgThumb, ctx.GetUrl())
+						imgThumb = helper.FixUrl(imgThumb, ctx.GetUrl())
 
 						// download in disk , save to local
-						MakeDir(DOWNLOAD_ROOT + tagName)
+						helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName)
 
 						//SaveConfig()
 
@@ -211,12 +194,12 @@ var The4493 = &Spider{
 							&request.Request{
 								Url:  url,
 								Rule: "PICSETLIST",
-								Temp: map[string]interface{}{"DIR": DOWNLOAD_ROOT + tagName, "TAGNAME": tagName},
+								Temp: map[string]interface{}{"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName, "TAGNAME": tagName},
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},
 									"Cookie":     []string{cookies},
-									"User-Agent": []string{consts.AGENT_PUBLIC},
-									"Referer":    []string{HOME_URL},
+									"User-Agent": []string{helper.AGENT_PUBLIC},
+									"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
 									//"Upgrade-Insecure-Requests": []string{"1"},
 									//"Cache-Control":             []string{"no-cache"},
 								},
@@ -224,7 +207,7 @@ var The4493 = &Spider{
 							},
 						)
 
-						DownloadObject(imgThumb, DOWNLOAD_ROOT+tagName, "thumb")
+						helper.DownloadObject(imgThumb, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName, "thumb")
 
 					})
 				},
@@ -237,11 +220,10 @@ var The4493 = &Spider{
 					"PICSETTHUMB",
 				},
 				ParseFunc: func(ctx *Context) {
-
 					// picset list like: https://www.4493.com/star/mihuanmeinv/
 					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
 
-					saveDir := ctx.GetTemp("DIR", DOWNLOAD_ROOT).(string)
+					saveDir := ctx.GetTemp("DIR", helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot).(string)
 
 					query := ctx.GetDom()
 					lis := query.Find(".piclist").Find("ul").Find("li") // 不能写 ".thumb a"
@@ -262,9 +244,9 @@ var The4493 = &Spider{
 							return
 						}
 
-						img = FixUrl(img, ctx.GetUrl())
+						img = helper.FixUrl(img, ctx.GetUrl())
 						//logs.Log.Warning("get a set url:%v", url)
-						url = FixUrl(url, ctx.GetUrl())
+						url = helper.FixUrl(url, ctx.GetUrl())
 
 						// record this picset
 						ctx.Output(map[int]interface{}{
@@ -275,7 +257,7 @@ var The4493 = &Spider{
 
 						// download in disk
 						// save to local
-						MakeDir(saveDir + "/" + picsetName)
+						helper.MakeDir(saveDir + "/" + picsetName)
 
 						//logs.Log.Warning("extract picset url, img=%v, %v, %v", url, img, picsetName)
 
@@ -300,8 +282,8 @@ var The4493 = &Spider{
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},
 									"Cookie":     []string{cookies},
-									"User-Agent": []string{consts.AGENT_PUBLIC},
-									"Referer":    []string{HOME_URL},
+									"User-Agent": []string{helper.AGENT_PUBLIC},
+									"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
 									//"Upgrade-Insecure-Requests": []string{"1"},
 									//"Cache-Control":             []string{"no-cache"},
 								},
@@ -309,7 +291,7 @@ var The4493 = &Spider{
 							},
 						)
 
-						DownloadObject(img, saveDir+"/"+picsetName, "thumb")
+						helper.DownloadObject(img, saveDir+"/"+picsetName, "thumb")
 					})
 				},
 			},
@@ -325,12 +307,12 @@ var The4493 = &Spider{
 					query := ctx.GetDom()
 
 					picsetName := ctx.GetTemp("PICSETNAME", "").(string)
-					saveDir := ctx.GetTemp("DIR", DOWNLOAD_ROOT+picsetName).(string)
+					saveDir := ctx.GetTemp("DIR", helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+picsetName).(string)
 
 					imgUrl, _ := query.Find(".picsboxcenter").Find("img").Eq(0).Attr("src")
-					imgUrl = FixUrl(imgUrl, ctx.GetUrl())
+					imgUrl = helper.FixUrl(imgUrl, ctx.GetUrl())
 
-					DownloadObject(imgUrl, saveDir, "")
+					helper.DownloadObject(imgUrl, saveDir, "")
 					//logs.Log.Warning("IN %v imgUrl=%v", picsetName, imgUrl)
 
 					pages := query.Find(".page").Find("a")
@@ -346,7 +328,7 @@ var The4493 = &Spider{
 							return
 						}
 
-						nextPageUrl = FixUrl(nextPageUrl, ctx.GetUrl())
+						nextPageUrl = helper.FixUrl(nextPageUrl, ctx.GetUrl())
 						ctx.AddQueue(
 							&request.Request{
 								Url:  nextPageUrl,
@@ -355,8 +337,8 @@ var The4493 = &Spider{
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},
 									//"Cookie":     []string{cookies},
-									"User-Agent": []string{consts.AGENT_PUBLIC},
-									"Referer":    []string{HOME_URL},
+									"User-Agent": []string{helper.AGENT_PUBLIC},
+									"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
 									//"Upgrade-Insecure-Requests": []string{"1"},
 									//"Cache-Control":             []string{"no-cache"},
 								},
@@ -370,89 +352,4 @@ var The4493 = &Spider{
 			},
 		},
 	},
-}
-
-func MakeDir(dirpath string) bool {
-	err := os.Mkdir(dirpath, os.ModeDir)
-	if err != nil {
-		logs.Log.Error("mkdir error:%v", err)
-		return false
-	}
-	return true
-}
-
-func DownloadObject(url string, saveDir string, saveName string) (savedPath string) {
-	res, err := http.Get(url)
-	if err != nil {
-		logs.Log.Warning("download failed: url=%v err=%v", url, err)
-		return
-	}
-
-	contentType := res.Header.Get("Content-Type")
-	exts, err := mime.ExtensionsByType(contentType)
-
-	//logs.Log.Warning("got mime type from %v=%v err=%v", contentType, exts, err)
-	ext := ""
-	if len(exts) > 0 {
-		ext = exts[0]
-	} else {
-		ext = ".jpg"
-	}
-
-	if saveName == "" {
-
-		for i := len(url) - 1; i > 0; i-- {
-			if url[i] == '/' {
-				saveName = url[i+1:]
-				break
-			}
-		}
-
-		if len(saveName) == 0 {
-			md5er := md5.New()
-			md5er.Write([]byte(url))
-			saveName = hex.EncodeToString(md5er.Sum(nil)) + ext
-		}
-	}
-
-	if strings.IndexByte(saveName, '.') < 0 {
-		saveName = saveName + ext
-	}
-
-	savedPath = saveDir + "/" + saveName
-
-	fhandle, err := os.Create(savedPath) //, os.O_CREATE|os.O_WRONLY, os.ModePerm)
-
-	if err != nil {
-		logs.Log.Warning("create file failed: path=%v err=%v", savedPath, err)
-		return ""
-	}
-
-	io.Copy(fhandle, res.Body)
-
-	fhandle.Close()
-
-	return savedPath
-}
-
-// you should consider url begin with '#'
-func FixUrl(url string, route string) (finalUrl string) {
-
-	finalUrl = url
-
-	if len(url) > 4 && url[:4] == "http" {
-		// legal
-		return
-	} else if len(url) > 0 && url[0] == '/' {
-		finalUrl = HOME_URL + url[1:]
-	} else {
-		for i := len(route) - 1; i > 0; i-- {
-			if route[i] == '/' {
-				route = route[:i+1]
-				break
-			}
-		}
-		finalUrl = route + url
-	}
-	return
 }
