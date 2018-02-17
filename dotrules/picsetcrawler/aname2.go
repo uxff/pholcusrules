@@ -107,12 +107,8 @@ var Aname2 = &Spider{
 					}
 
 					// <div id="id_container" class="thumbs container xx">
-					lis := query.Find("#id_container").Find(".thumbs")
+					lis := query.Find("#th_container").Find(".thumb")
 					lis.Each(func(i int, s *goquery.Selection) {
-						if i > 10 {
-							//return
-						}
-
 						url, _ := s.Find("a").Eq(0).Attr("href")
 						img, _ := s.Find("img").Eq(0).Attr("src")
 
@@ -197,9 +193,19 @@ var Aname2 = &Spider{
 					// picset like: https://www.4493.com/gaoqingmeinv/134254/1.htm
 					query := ctx.GetDom()
 
-					picsetName := query.Find("#header").Find("h1").Text()
-					picsetName = strings.Trim(picsetName, " \t")
+					urlArr := strings.Split(ctx.GetUrl(), helper.AIR_CONFIGS[ctx.GetName()].HomePage)
+					picsetName := ""
+					if len(urlArr) > 1 {
+						picsetName = urlArr[1]
+						picsetName = strings.Trim(picsetName, "/")
+					} else {
+						picsetName := query.Find("#header").Find("h1").Text()
+						picsetName = strings.Trim(picsetName, " \t")
+					}
+
 					saveDir := helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + picsetName
+					helper.MakeDir(saveDir)
+					helper.MakeDir(saveDir + "/thumbs")
 
 					thumbUrl := ctx.GetTemp("THUMB_URL", "").(string)
 					helper.DownloadObject(thumbUrl, saveDir, "thumb")
@@ -212,7 +218,7 @@ var Aname2 = &Spider{
 						littlePic = helper.FixUrl(littlePic, ctx.GetUrl())
 
 						helper.DownloadObject(largePic, saveDir, "")
-						helper.DownloadObject(littlePic, saveDir, "")
+						helper.DownloadObject(littlePic, saveDir+"/thumbs", "")
 					})
 
 				},

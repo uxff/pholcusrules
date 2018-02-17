@@ -32,7 +32,7 @@ func init() {
 
 func MakeDir(dirpath string) bool {
 	err := os.Mkdir(dirpath, os.ModeDir)
-	if err != nil {
+	if err != nil && err != os.ErrExist {
 		logs.Log.Error("mkdir error:%v", err)
 		return false
 	}
