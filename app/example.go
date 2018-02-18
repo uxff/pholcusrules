@@ -21,10 +21,9 @@ import (
 	_ "github.com/uxff/pholcusrules/dotrules/agricultures"
 	_ "github.com/uxff/pholcusrules/dotrules/duanwenxue"
 	_ "github.com/uxff/pholcusrules/dotrules/kuaidaili"
+	_ "github.com/uxff/pholcusrules/dotrules/nondotpicset"
 	_ "github.com/uxff/pholcusrules/dotrules/picsetcrawler"
 	_ "github.com/uxff/pholcusrules/dotrules/qzone"
-	_ "github.com/uxff/pholcusrules/dotrules/the4493"
-	//_ "github.com/uxff/pholcusrules/dotrules/the55156"
 	_ "github.com/uxff/pholcusrules/dotrules/vote"
 	_ "github.com/uxff/pholcusrules/dotrules/wx100000p"
 )

@@ -1,4 +1,4 @@
-package the4493
+package nondotpicset
 
 /*
 curl http://www.airtmv.com/
@@ -11,14 +11,8 @@ PICSETNAME,IMG_OF_PICSET
 
 // 基础包
 import (
-	//"crypto/md5"
-	//"encoding/hex"
 	"fmt"
-	//"io"
-	//"mime"
-	//"io/ioutil"
 	"net/http"
-	//"os"
 	//"strconv"
 	"strings"
 	//"sync"
