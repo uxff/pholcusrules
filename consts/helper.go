@@ -3,7 +3,9 @@ package consts
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"io"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"net/url"
@@ -124,4 +126,65 @@ func FixUrl(targetUrl string, route string) (finalUrl string) {
 		finalUrl = route + targetUrl
 	}
 	return
+}
+
+func WritePicsetConfig(cfg map[string]string, picsetDir string) error {
+	cfgFileName := "config.json"
+	// if file exist, read config and write over
+	// if file not exit, create and write in
+
+	if picsetDir == "" {
+		return os.ErrNotExist
+	}
+
+	if picsetDir[len(picsetDir)-1] != '/' {
+		picsetDir = picsetDir + "/"
+	}
+
+	var existCfgContent []byte
+	var dido interface{}
+	var existCfgMap map[string]interface{} = make(map[string]interface{}, 0)
+	existCfgHandle, err := os.Open(picsetDir + cfgFileName)
+	if err == nil {
+		existCfgContent, _ = ioutil.ReadAll(existCfgHandle)
+		existCfgHandle.Close()
+
+		err = json.Unmarshal(existCfgContent, &dido)
+		if err != nil {
+			logs.Log.Error("json unmarshal content from picset config file error:%v", err)
+			return err
+		}
+
+		existCfgMap = dido.(map[string]interface{})
+
+	}
+
+	for k, _ := range cfg {
+		existCfgMap[k] = cfg[k]
+	}
+
+	type PicsetConfig struct {
+		Title   string `json:"title"`
+		Url     string `json:"url"`
+		Tags    string `json:"tags"`
+		Pubdate string `json:"pubdate"`
+	}
+
+	fhandle, err := os.OpenFile(picsetDir+cfgFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		logs.Log.Error("open picset config file error:%v", err)
+		return err
+	}
+
+	content, err := json.Marshal(existCfgMap)
+	if err != nil {
+		logs.Log.Error("json marshal error:%v", err)
+		return err
+	}
+
+	fhandle.Write(content)
+	fhandle.Close()
+
+	return nil
+
 }

@@ -195,12 +195,14 @@ var Aname2 = &Spider{
 
 					urlArr := strings.Split(ctx.GetUrl(), helper.AIR_CONFIGS[ctx.GetName()].HomePage)
 					picsetName := ""
+					title := ""
 					if len(urlArr) > 1 {
 						picsetName = urlArr[1]
 						picsetName = strings.Trim(picsetName, "/")
 					} else {
 						picsetName := query.Find("#header").Find("h1").Text()
 						picsetName = strings.Trim(picsetName, " \t")
+						title = picsetName
 					}
 
 					saveDir := helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + picsetName
@@ -209,6 +211,19 @@ var Aname2 = &Spider{
 
 					thumbUrl := ctx.GetTemp("THUMB_URL", "").(string)
 					helper.DownloadObject(thumbUrl, saveDir, "thumb")
+
+					if title == "" {
+						title = picsetName
+					}
+
+					writeConfig := map[string]string{
+						"title":   title,
+						"url":     ctx.GetUrl(),
+						"tags":    "",
+						"pubdate": "",
+					}
+
+					helper.WritePicsetConfig(writeConfig, saveDir)
 
 					query.Find(".picthumbs").Find("a").Each(func(gi int, s *goquery.Selection) {
 						largePic, _ := s.Attr("href")
