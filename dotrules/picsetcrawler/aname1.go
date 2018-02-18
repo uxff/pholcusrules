@@ -86,6 +86,13 @@ var Aname1 = &Spider{
 
 					logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
 
+					// cookie
+					cookies := ""
+					cookie := ctx.Response.Cookies()
+					for _, c := range cookie {
+						cookies += c.Name + "=" + c.Value + "; "
+					}
+
 					query := ctx.GetDom()
 					lis := query.Find(".thumb") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
@@ -132,16 +139,6 @@ var Aname1 = &Spider{
 							helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + picsetName)
 
 							logs.Log.Warning("extract picset url, img=%v, %v, %v", nextUrl, img, picsetName)
-
-							// cookie
-							cookies := ""
-							cookie := ctx.Response.Cookies()
-							for _, c := range cookie {
-								cookies += c.Name + "=" + c.Value + "; "
-							}
-
-							//logs.Log.Warning("cookie=%s ", cookies)
-							//cookies = "25a6da5acf7fde759f79e8c23ab0dc76d53f8=cGxmUnIwNWQ1T3JvTVRVeE16QTVNamsyTlMwd0xTRXcb; f6d9f67e5f2c5b9dd954e79d40588261f042e31abda5d=bkpHaHAwMU1ZV0U0TlRsbFpqRmlaREF4TTJaa1pXVXlORFZpTlRRd01ETXhNamRqWkRNPQc; 9353eb=1513092965; _ga=GA1.2.1711782959.1513095156; _gid=GA1.2.1692799327.1513095156; 34843e6d0d96c28940bc888267e9b3=ekxwRzExN1FTRVpoVXVuRHlKV3VMOTB1ZERRNU9UUTVPQT09a; 073273c2a4e3c0d936022720d=SzZlRE4xNlZCdk00QUdleWQ5NlVHMWVNaTB3a; 9353e=bm9yZWZ8fGRlZmF1bHR8MXwyfDJ8bm9uZXwwOmpwZ3JhdnVyZS5jb20%3D; __atuvc=3%7C50; __atuvs=5a2fffe7e5348de2002"
 
 							logs.Log.Warning("will request: %v", nextUrl)
 
