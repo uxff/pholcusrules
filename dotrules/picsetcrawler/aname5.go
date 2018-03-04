@@ -48,7 +48,7 @@ func init() {
 	Aname5.Register()
 }
 
-var Aname4 = &Spider{
+var Aname5 = &Spider{
 	//Name:         THE_DOMAIN,
 	//Description:  THE_DOMAIN + " no need input",
 	Pausetime:    300,
