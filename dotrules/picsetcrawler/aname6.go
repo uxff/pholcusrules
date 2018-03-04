@@ -32,23 +32,23 @@ import (
 
 func init() {
 	config := &helper.AirConfig{
-		Name:      "ANAME5",
-		Domain:    "Auto tgpss.com",
-		HomePage:  "http://www.tgpss.com/",
-		FirstPage: "http://www.tgpss.com/category.html",
+		Name:      "ANAME6",
+		Domain:    "Auto asianamateurpussy.com",
+		HomePage:  "http://www.asianamateurpussy.com/",
+		FirstPage: "http://www.asianamateurpussy.com/",
 	}
 
 	config.DownloadRoot = fmt.Sprintf("./%s/", config.Name)
 	// save: tagname/picsetname/pics*.jpg
 
 	helper.AIR_CONFIGS[config.Name] = config
-	Aname5.Name = config.Name
-	Aname5.Description = config.Domain
+	Aname6.Name = config.Name
+	Aname6.Description = config.Domain
 
-	Aname5.Register()
+	Aname6.Register()
 }
 
-var Aname4 = &Spider{
+var Aname6 = &Spider{
 	//Name:         THE_DOMAIN,
 	//Description:  THE_DOMAIN + " no need input",
 	Pausetime:    300,
