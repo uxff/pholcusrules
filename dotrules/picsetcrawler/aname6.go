@@ -1,7 +1,7 @@
 package picsetcrawler
 
 /*
-curl http://www.asianamateurpussy.com/
+curl http://www.asianamateurpussy.com/ with redirect url=xxx
 需求： 下载静态网站中的图集
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
