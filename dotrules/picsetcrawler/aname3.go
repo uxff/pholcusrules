@@ -5,8 +5,7 @@ curl http://crazysexyasian.com/ with redirect url=base64(url)
 需求： 下载静态网站中的图集
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
-
-
+done
 */
 
 // 基础包
@@ -112,7 +111,7 @@ var Aname3 = &Spider{
 					lis := query.Find(".thumbs").Find("a")
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 3 {
-							return
+							//return
 						}
 
 						targetUrl, _ := s.Attr("href")
@@ -124,6 +123,7 @@ var Aname3 = &Spider{
 
 						img = helper.FixUrl(img, ctx.GetUrl())
 						//logs.Log.Warning("get a set url:%v", targetUrl)
+
 						targetUrl = helper.FixUrl(targetUrl, ctx.GetUrl())
 
 						// base64 decode
@@ -220,4 +220,20 @@ var Aname3 = &Spider{
 			},
 		},
 	},
+}
+
+func FixMyUrl(targetUrl string, route string) string {
+	urlParsed, err := url.Parse(targetUrl)
+	if err != nil {
+		return ""
+	}
+
+	urlQuery := urlParsed.Query()
+	encryptedUrl := urlQuery.Get("url")
+
+	var realUrl []byte = make([]byte, 256)
+
+	base64.NewDecoder(base64.RawURLEncoding, strings.NewReader(encryptedUrl)).Read(realUrl)
+
+	return string(realUrl)
 }
