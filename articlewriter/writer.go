@@ -24,7 +24,7 @@ type ArticleWriter struct{}
 
 var Orm *xorm.Engine
 var OrmEngine string
-var OrmDB string
+var OrmDB string = "xahoo"
 
 //var NormalFetcher *h.Fetcher
 
@@ -33,6 +33,10 @@ var defaultWriter = &ArticleWriter{}
 var defaultAuthor string = "xahoo"
 var defaultOrigin string = "wx100000p"
 var defaultUrlMaker func(*ArticleEntity) string
+
+func init() {
+	ConnectDb()
+}
 
 func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 	// json unmarshal from buf to entities
@@ -62,20 +66,6 @@ func (this *ArticleWriter) Write(buf []byte) (n int, err error) {
 func (this *ArticleWriter) Close() error {
 	//Orm.CloseSession()
 	return nil
-}
-
-func init() {
-
-	var err error
-
-	OrmDB = "xahoo"
-
-	Orm, err = xorm.NewEngine("mysql", MysqlConnectionStr) //"www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
-	if err != nil {
-		logs.Log.Error("orm init error:%v", err)
-		return
-	}
-	Orm.SetMapper(core.SameMapper{})
 }
 
 func SaveArticles(items []ArticleEntity, origin string) (succNum int, err error) {
@@ -174,4 +164,29 @@ func SetAuthor(v string) {
 
 func SetUrlMaker(maker func(*ArticleEntity) string) {
 	defaultUrlMaker = maker
+}
+
+func SetDbName(dbname string) {
+	OrmDB = dbname
+}
+
+func ReconnectDb() error {
+
+	if Orm != nil {
+		Orm.Close()
+	}
+
+	return ConnectDb()
+}
+
+func ConnectDb() error {
+	var err error
+
+	Orm, err = xorm.NewEngine("mysql", MysqlConnectionStr) //"www:123x456@tcp(127.0.0.1:3306)/xahoo?charset=utf8")
+	if err != nil {
+		logs.Log.Error("orm init error:%v", err)
+		return err
+	}
+	Orm.SetMapper(core.SameMapper{})
+	return nil
 }
