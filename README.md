@@ -1,7 +1,9 @@
 ## crawl website by pholcus
 crawl some website by pholcus
 
-website include qzone,hejin-vote,etc.
+website include duanwenxue,kuaidaili,wx100000p,hejin-vote,etc.
+
+even excited site.
 
 ## env
 - OS: Windows(x64 recommended),Mac,Linux
