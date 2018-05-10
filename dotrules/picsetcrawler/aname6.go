@@ -112,7 +112,7 @@ var Aname6 = &Spider{
 					lis := query.Find(".thumbs").Find("a")
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 3 {
-							return
+							//return
 						}
 
 						targetUrl, _ := s.Attr("href")
