@@ -2,10 +2,11 @@ package picsetcrawler
 
 /*
 curl http://www.tgpss.com/
-需求： 下载静态网站中的图集
-记录图库资源
+requirement: download picset from site
+columns will be record:
 PICSETNAME,IMG_OF_PICSET
 
+comment: this site is random format and random layer in same domain.
 
 */
 
@@ -101,7 +102,7 @@ var Aname5 = &Spider{
 
 					query := ctx.GetDom()
 
-					// cookie
+					// auto cookie
 					cookies := ""
 					cookie := ctx.Response.Cookies()
 					for _, c := range cookie {
