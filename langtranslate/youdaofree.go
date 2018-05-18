@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -54,9 +55,11 @@ func (this *YoudaoFreeTranslator) SetApiConfig(conf map[string]interface{}) {
 func (this *YoudaoFreeTranslator) SetFromLang(lang string) {
 	this.fromLang = lang
 }
+
 func (this *YoudaoFreeTranslator) SetToLang(lang string) {
 	this.toLang = lang
 }
+
 func (this *YoudaoFreeTranslator) Translate(str string) (string, error) {
 
 	params := "client=deskdict&keyfrom=chrome.extension&jsonVersion=1&dogVersion=1.0&ue=utf8&doctype=json&i=" + str
@@ -69,7 +72,7 @@ func (this *YoudaoFreeTranslator) Translate(str string) (string, error) {
 
 	willContentType := "application/json"
 	realContentType := transRetOfApi.Header.Get("Content-Type")
-	if realContentType[:len(willContentType)] != "application/json" {
+	if strings.Compare(willContentType, realContentType) == 0 {
 		return "", fmt.Errorf("when youdao translate, error content type from api:%v, EXPECT application/json", realContentType)
 	}
 
@@ -97,9 +100,16 @@ func (this *YoudaoFreeTranslator) Translate(str string) (string, error) {
 	return "", fmt.Errorf("response could not unmarshal:%s...", targetRes[:contentLineAbsLen])
 }
 
-func (this *YoudaoFreeTranslator) AsyncTranslate(str string) int {
+func (this *YoudaoFreeTranslator) AsyncTranslate(str string) <-chan *TransRes {
 	//transTaskNextId++
-	return youdaofreeTransTaskNextId
+	//return youdaofreeTransTaskNextId
+	theRetChan := make(chan *TransRes, 1)
+	go func() {
+		ret, err := this.Translate(str)
+		theRetChan <- &TransRes{Res: ret, Err: err}
+	}()
+
+	return theRetChan
 }
 func (this *YoudaoFreeTranslator) GetTransResult(taskId int) (string, error) {
 	return "", nil

@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	STATUS_NONE  = 0
-	STATUS_DOING = 1
-	STATUS_OK    = 2
-	STATUS_FAIL  = 3
+	STATUS_NONE = iota
+	STATUS_DOING
+	STATUS_OK
+	STATUS_FAIL
 )
 
 const (
@@ -90,30 +90,44 @@ func (this *BaiduTranslator) Translate(str string) (string, error) {
 		this.tasks = make(map[int]*BaiduTransTask, 0)
 	}
 
-	taskId := this.AsyncTranslate(str)
-	this.tasks[taskId].Wait(time.Second * 10)
-	if this.tasks[taskId].status == STATUS_OK {
-		return this.tasks[taskId].retStr, nil
-	}
+	theChan := this.AsyncTranslate(str)
 
-	return this.tasks[taskId].retStr, fmt.Errorf(this.tasks[taskId].failMsg)
+	theRes := <-theChan
+
+	//	this.tasks[taskId].Wait(time.Second * 10)
+	//	if this.tasks[taskId].status == STATUS_OK {
+	//		return this.tasks[taskId].retStr, nil
+	//	}
+
+	return theRes.Res, theRes.Err
+	//return this.tasks[taskId].retStr, fmt.Errorf(this.tasks[taskId].failMsg)
 	//return this.retStr, err
+
 }
-func (this *BaiduTranslator) AsyncTranslate(str string) int {
-	mu := &sync.Mutex{}
-	mu.Lock()
-	defer mu.Unlock()
+func (this *BaiduTranslator) AsyncTranslate(str string) <-chan *TransRes {
 
 	baiduTransTaskNextId++
 	task := &BaiduTransTask{id: baiduTransTaskNextId, queryStr: str, status: STATUS_NONE, fromLang: this.fromLang, toLang: this.toLang}
+
+	theChan := make(chan *TransRes, 1)
+
 	go func() {
+		mu := &sync.Mutex{}
+		mu.Lock()
+		defer mu.Unlock()
 		this.tasks[baiduTransTaskNextId] = task
 		task.Start()
+
+		tranRes := &TransRes{}
+		tranRes.Res, tranRes.Err = task.GetResult()
+
+		theChan <- tranRes
+
 	}()
 
 	//this.tasks = append(this.tasks, task)
 	//task.Start()
-	return task.id
+	return theChan
 }
 
 func (this *BaiduTranslator) GetTransResult(taskId int) (ret string, err error) {

@@ -44,9 +44,14 @@ type Translator interface {
 	SetFromLang(lang string)
 	SetToLang(lang string)
 	Translate(str string) (string, error)
-	AsyncTranslate(str string) int
+	AsyncTranslate(str string) <-chan *TransRes
 	GetTransResult(int) (string, error)
 	//AddTranslateTask(str string) *TranslatorTask
+}
+
+type TransRes struct {
+	Res string
+	Err error
 }
 
 func SelectTranslator(id TRANSLATOR_ID) Translator {
