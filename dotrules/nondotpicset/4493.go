@@ -6,6 +6,7 @@ curl http://www.4493.com/xilie.html
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
 
+done:89GB
 
 */
 
