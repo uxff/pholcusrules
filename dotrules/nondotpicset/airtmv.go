@@ -6,6 +6,14 @@ curl http://www.airtmv.com/
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
 
+body .nav
+    - a=>
+        #piclist
+            - .piclist_li
+                a->img
+        .page
+            len(li)-3
+                a=>#piclist
 
 */
 
@@ -134,72 +142,7 @@ var TheAirtmv = &Spider{
 							},
 						)
 
-						helper.DownloadObject(imgThumb, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName, "thumb")
-
-					})
-				},
-			},
-
-			"TAGLIST": {
-				ParseFunc: func(ctx *Context) {
-					// tag list like: https://www.4493.com/star/mihuanmeinv/
-					//logs.Log.Warning("content len of list=%v err=%v", ctx.Response.ContentLength, ctx.GetError())
-
-					query := ctx.GetDom()
-					// cookie
-					cookies := ""
-					cookie := ctx.Response.Cookies()
-					for _, c := range cookie {
-						cookies += c.Name + "=" + c.Value + "; "
-					}
-
-					lis := query.Find(".nav").Find("ul").Find("li") // 不能写 ".thumb a"
-					logs.Log.Warning("the nav li =%v", lis.Length())
-
-					lis.Each(func(i int, s *goquery.Selection) {
-
-						url, _ := s.Find("a").Eq(0).Attr("href")
-						tagName := s.Find("a").Eq(0).Text()
-						tagName = strings.Trim(tagName, " \t")
-
-						if len(url) == 0 {
-							return
-						}
-
-						//logs.Log.Warning("find a picset list(%v):%v", tagName, url)
-						url = helper.FixUrl(url, ctx.GetUrl())
-
-						imgThumb, _ := s.Find("img").Attr("src")
-						imgThumb = helper.FixUrl(imgThumb, ctx.GetUrl())
-
-						// download in disk , save to local
-						helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName)
-
-						//SaveConfig()
-
-						//logs.Log.Warning("extract tag url, img=%v, %v, %v", url, img, tagName)
-
-						logs.Log.Warning("will request taglist->picsetlist: %v", url)
-
-						// queue request the picset detail
-						ctx.AddQueue(
-							&request.Request{
-								Url:  url,
-								Rule: "PICSETLIST",
-								Temp: map[string]interface{}{"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName, "TAGNAME": tagName},
-								Header: http.Header{
-									//"Accept-Language":           []string{"zh-CN,zh"},
-									"Cookie":     []string{cookies},
-									"User-Agent": []string{helper.AGENT_PUBLIC},
-									"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
-									//"Upgrade-Insecure-Requests": []string{"1"},
-									//"Cache-Control":             []string{"no-cache"},
-								},
-								DownloaderID: 0,
-							},
-						)
-
-						helper.DownloadObject(imgThumb, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName, "thumb")
+						//helper.DownloadObject(imgThumb, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName, "thumb")
 
 					})
 				},
@@ -225,15 +168,15 @@ var TheAirtmv = &Spider{
 					}
 
 					query := ctx.GetDom()
-					lis := query.Find(".piclist").Find("ul").Find("li") // 不能写 ".thumb a"
+					lis := query.Find("#piclist").Find("li") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 10 {
-							//return
+							return
 						}
 
 						url, _ := s.Find("a").Eq(0).Attr("href")
-						img, _ := s.Find("img").Eq(0).Attr("src")
-						picsetName := s.Find("a").Eq(0).Find("span").Text()
+						thumbImg, _ := s.Find("img").Eq(0).Attr("src")
+						picsetName, _ := s.Find("a").Eq(0).Attr("title")
 						picsetName = strings.Trim(picsetName, " \t")
 						if len(picsetName) == 0 {
 							picsetName = fmt.Sprintf("%v", i)
@@ -243,7 +186,7 @@ var TheAirtmv = &Spider{
 							return
 						}
 
-						img = helper.FixUrl(img, ctx.GetUrl())
+						thumbImg = helper.FixUrl(thumbImg, ctx.GetUrl())
 						//logs.Log.Warning("get a set url:%v", url)
 						url = helper.FixUrl(url, ctx.GetUrl())
 
@@ -251,7 +194,7 @@ var TheAirtmv = &Spider{
 						ctx.Output(map[int]interface{}{
 							0: picsetName,
 							1: url,
-							2: img,
+							2: thumbImg,
 						})
 
 						// download in disk
@@ -280,8 +223,13 @@ var TheAirtmv = &Spider{
 							},
 						)
 
-						helper.DownloadObject(img, saveDir+"/"+picsetName, "thumb")
+						helper.DownloadObject(thumbImg, saveDir+"/"+picsetName, "thumb")
+
 					})
+
+					// todo : next page
+					//pageLis := query.Find(".page").Find("li")
+
 				},
 			},
 
@@ -298,26 +246,22 @@ var TheAirtmv = &Spider{
 					picsetName := ctx.GetTemp("PICSETNAME", "").(string)
 					saveDir := ctx.GetTemp("DIR", helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+picsetName).(string)
 
-					imgUrl, _ := query.Find(".picsboxcenter").Find("img").Eq(0).Attr("src")
-					imgUrl = helper.FixUrl(imgUrl, ctx.GetUrl())
+					query.Find("#contents").Find("img").Each(func(si int, s *goquery.Selection) {
+						imgUrl, _ := s.Attr("src")
+						imgUrl = helper.FixUrl(imgUrl, ctx.GetUrl())
+						helper.DownloadObject(imgUrl, saveDir, "")
+					})
 
-					helper.DownloadObject(imgUrl, saveDir, "")
 					//logs.Log.Warning("IN %v imgUrl=%v", picsetName, imgUrl)
 
-					pages := query.Find(".page").Find("a")
-					pages.Each(func(i int, s *goquery.Selection) {
-
-						if i == 0 || i == pages.Length()-1 {
-							return
-						}
-
-						nextPageUrl, _ := s.Attr("href")
-						nextPageUrl = strings.Trim(nextPageUrl, " \t\r\n")
-						if nextPageUrl == "" {
-							return
-						}
-
+					nextPage := query.Find("#contentsx").Find("a").Last()
+					nextPageText := strings.Trim(nextPage.Text(), " \t\r\n")
+					if nextPageText == "下一页" {
+						nextPageUrl, _ := nextPage.Attr("href")
+						//nextPageUrl = strings.Trim(nextPageUrl, " \t\r\n")
 						nextPageUrl = helper.FixUrl(nextPageUrl, ctx.GetUrl())
+						logs.Log.Warning("will go next page in picset:%v", nextPageUrl)
+
 						ctx.AddQueue(
 							&request.Request{
 								Url:  nextPageUrl,
@@ -335,7 +279,7 @@ var TheAirtmv = &Spider{
 							},
 						)
 
-					})
+					}
 
 				},
 			},
