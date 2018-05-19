@@ -74,7 +74,7 @@ var TheAirtmv = &Spider{
 
 			ctx.AddQueue(&request.Request{
 				Url:  entranceUrl,
-				Rule: "TAGLIST",
+				Rule: "HOMEPAGE",
 				Header: http.Header{
 					"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
 					"User-Agent": []string{helper.AGENT_PUBLIC},
@@ -103,6 +103,11 @@ var TheAirtmv = &Spider{
 
 					lis.Each(func(i int, s *goquery.Selection) {
 
+						if i == 0 {
+							// home url of self
+							return
+						}
+
 						url, _ := s.Find("a").Eq(0).Attr("href")
 						tagName := s.Find("a").Eq(0).Text()
 						tagName = strings.Trim(tagName, " \t")
@@ -113,9 +118,6 @@ var TheAirtmv = &Spider{
 
 						//logs.Log.Warning("find a picset list(%v):%v", tagName, url)
 						url = helper.FixUrl(url, ctx.GetUrl())
-
-						imgThumb, _ := s.Find("img").Attr("src")
-						imgThumb = helper.FixUrl(imgThumb, ctx.GetUrl())
 
 						// download in disk , save to local
 						helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName)
@@ -145,6 +147,16 @@ var TheAirtmv = &Spider{
 						//helper.DownloadObject(imgThumb, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName, "thumb")
 
 					})
+
+					writeConfig := map[string]string{
+						"title":   helper.AIR_CONFIGS[ctx.GetName()].Name,
+						"url":     ctx.GetUrl(),
+						"tags":    "",
+						"pubdate": "",
+					}
+
+					helper.WritePicsetConfig(writeConfig, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot)
+
 				},
 			},
 
@@ -171,7 +183,7 @@ var TheAirtmv = &Spider{
 					lis := query.Find("#piclist").Find("li") // 不能写 ".thumb a"
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 10 {
-							return
+							//return
 						}
 
 						url, _ := s.Find("a").Eq(0).Attr("href")
@@ -227,8 +239,42 @@ var TheAirtmv = &Spider{
 
 					})
 
+					tagName := ctx.GetTemp("TAGNAME", "").(string)
 					// todo : next page
-					//pageLis := query.Find(".page").Find("li")
+					pageLis := query.Find(".page").Find("li")
+					if pageLis.Length() > 3 {
+
+						nextPageUrl, _ := pageLis.Eq(pageLis.Length() - 3).Find("a").Attr("src")
+
+						nextPageUrl = helper.FixUrl(nextPageUrl, ctx.GetUrl())
+
+						logs.Log.Warning("will go to next picsetlist:%s", nextPageUrl)
+
+						ctx.AddQueue(
+							&request.Request{
+								Url:  nextPageUrl,
+								Rule: "PICSETLIST",
+								Temp: map[string]interface{}{"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + tagName, "TAGNAME": tagName},
+								Header: http.Header{
+									//"Accept-Language":           []string{"zh-CN,zh"},
+									"Cookie":     []string{cookies},
+									"User-Agent": []string{helper.AGENT_PUBLIC},
+									"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
+								},
+								DownloaderID: 0,
+							},
+						)
+
+					}
+
+					writeConfig := map[string]string{
+						"title":   tagName,
+						"url":     ctx.GetUrl(),
+						"tags":    "",
+						"pubdate": "",
+					}
+
+					helper.WritePicsetConfig(writeConfig, helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot+tagName)
 
 				},
 			},
@@ -280,6 +326,15 @@ var TheAirtmv = &Spider{
 						)
 
 					}
+
+					writeConfig := map[string]string{
+						"title":   picsetName,
+						"url":     ctx.GetUrl(),
+						"tags":    "",
+						"pubdate": "",
+					}
+
+					helper.WritePicsetConfig(writeConfig, saveDir)
 
 				},
 			},
