@@ -7,6 +7,8 @@ curl http://meitu.xunlei.com/albumlist.html
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
 undone
+limited til login
+need?
 
 */
 
