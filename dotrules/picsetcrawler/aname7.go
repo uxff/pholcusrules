@@ -70,7 +70,7 @@ var Aname7 = &Spider{
 
 			ctx.AddQueue(&request.Request{
 				Url:  entranceUrl,
-				Rule: "PICSETLIST",
+				Rule: "HOMEPAGE",
 				Header: http.Header{
 					//"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
 					"User-Agent": []string{helper.AGENT_PUBLIC},
@@ -85,11 +85,46 @@ var Aname7 = &Spider{
 		Trunk: map[string]*Rule{
 			"HOMEPAGE": {
 				ParseFunc: func(ctx *Context) {
-				},
-			},
+					query := ctx.GetDom()
 
-			"TAGLIST": {
-				ParseFunc: func(ctx *Context) {
+					// cookie
+					cookies := ""
+					cookie := ctx.Response.Cookies()
+					for _, c := range cookie {
+						cookies += c.Name + "=" + c.Value + "; "
+					}
+
+					// first page picset
+					ctx.AddQueue(&request.Request{
+						Url:  helper.AIR_CONFIGS[ctx.GetName()].FirstPage,
+						Rule: "PICSETLIST",
+						Header: http.Header{
+							//"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
+							"User-Agent": []string{helper.AGENT_PUBLIC},
+							//"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
+						},
+						Temp: map[string]interface{}{
+							"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot,
+						},
+					})
+
+					// page list, without first page
+					query.Find(".pager-next").Each(func(i int, s *goquery.Selection) {
+						pageUrl, _ := s.Attr("href")
+						pageUrl = helper.FixUrl(pageUrl, ctx.GetUrl())
+						ctx.AddQueue(&request.Request{
+							Url:  pageUrl,
+							Rule: "PICSETLIST",
+							Header: http.Header{
+								//"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
+								"User-Agent": []string{helper.AGENT_PUBLIC},
+								//"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
+							},
+							Temp: map[string]interface{}{
+								"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot,
+							},
+						})
+					})
 				},
 			},
 
@@ -116,7 +151,7 @@ var Aname7 = &Spider{
 					lis := query.Find(".pager").Parent().Find("table").Find("tr").Find("a")
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 3 {
-							return
+							//return
 						}
 
 						targetUrl, _ := s.Attr("href")
