@@ -5,6 +5,8 @@ curl http://japanfuckpics.com/
 需求： 下载静态网站中的图集
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
+dev:done
+download:unknown
 
 
 */
@@ -166,7 +168,7 @@ var Aname2 = &Spider{
 								Url:  nextUrl,
 								Rule: "PICSETLIST",
 								Temp: map[string]interface{}{
-									//"DIR": saveDir + "/",
+								//"DIR": saveDir + "/",
 								},
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},

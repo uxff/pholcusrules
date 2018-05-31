@@ -5,6 +5,8 @@ curl http://highasianporn.com
 需求： 下载静态网站中的图集
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
+dev:done
+download:unknown
 
 */
 

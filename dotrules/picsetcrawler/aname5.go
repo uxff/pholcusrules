@@ -5,6 +5,8 @@ curl http://www.tgpss.com/
 requirement: download picset from site
 columns will be record:
 PICSETNAME,IMG_OF_PICSET
+dev:done
+download:not yet, no need
 
 comment: this site is random format and random layer in same domain.
 

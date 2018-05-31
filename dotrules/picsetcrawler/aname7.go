@@ -1,24 +1,23 @@
 package picsetcrawler
 
 /*
-curl http://www.asianamateurpussy.com/ with redirect url=xxx
-需求： 下载静态网站中的图集
-记录图库资源
-PICSETNAME,IMG_OF_PICSET
-dev:unknown
-download:unknown
+curl http://sexygirlcity.com/index.php?gal=0_1
+需求：
+ - 下载静态网站中的图集
+ - 记录图库资源
+dev:undown
+download:undown
 
 
 */
 
 // 基础包
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
 	//"strconv"
-	"strings"
+
 	//"sync"
 
 	//"golang.org/x/net/html"
@@ -34,23 +33,23 @@ import (
 
 func init() {
 	config := &helper.AirConfig{
-		Name:      "ANAME6",
-		Domain:    "asianamateurpussy.com",
-		HomePage:  "http://www.asianamateurpussy.com/",
-		FirstPage: "http://www.asianamateurpussy.com/",
+		Name:      "ANAME7",
+		Domain:    "sexygirlcity.com",
+		HomePage:  "http://www.sexygirlcity.com/index.php",
+		FirstPage: "http://www.sexygirlcity.com/index.php?gal=0_1",
 	}
 
 	config.DownloadRoot = fmt.Sprintf("./%s/", config.Name)
 	// save: tagname/picsetname/pics*.jpg
 
 	helper.AIR_CONFIGS[config.Name] = config
-	Aname6.Name = config.Name
-	Aname6.Description = config.Domain
+	Aname7.Name = config.Name
+	Aname7.Description = config.Domain
 
-	Aname6.Register()
+	Aname7.Register()
 }
 
-var Aname6 = &Spider{
+var Aname7 = &Spider{
 	//Name:         THE_DOMAIN,
 	//Description:  THE_DOMAIN + " no need input",
 	Pausetime:    300,
@@ -73,9 +72,9 @@ var Aname6 = &Spider{
 				Url:  entranceUrl,
 				Rule: "PICSETLIST",
 				Header: http.Header{
-					"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
+					//"Cookie":     []string{helper.AIR_CONFIGS[ctx.GetName()].Cookie},
 					"User-Agent": []string{helper.AGENT_PUBLIC},
-					"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
+					//"Referer":    []string{helper.AIR_CONFIGS[ctx.GetName()].HomePage},
 				},
 				Temp: map[string]interface{}{
 					"DIR": helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot,
@@ -111,14 +110,18 @@ var Aname6 = &Spider{
 					}
 
 					// <div id="id_container" class="thumbs container xx">
-					lis := query.Find(".thumbs").Find("a")
+					trs := query.Find(".pager").Parent().Find("table").Find("tr")
+					logs.Log.Warning("the trs.lengh=%d", trs.Length())
+
+					lis := query.Find(".pager").Parent().Find("table").Find("tr").Find("a")
 					lis.Each(func(i int, s *goquery.Selection) {
 						if i > 3 {
-							//return
+							return
 						}
 
 						targetUrl, _ := s.Attr("href")
 						img, _ := s.Find("img").Eq(0).Attr("src")
+						picsetName, _ := s.Find("img").Eq(0).Attr("alt")
 
 						if len(targetUrl) == 0 || targetUrl[0] == '#' {
 							return
@@ -128,21 +131,14 @@ var Aname6 = &Spider{
 						//logs.Log.Warning("get a set url:%v", targetUrl)
 						targetUrl = helper.FixUrl(targetUrl, ctx.GetUrl())
 
-						// base64 decode
 						urlParsed, _ := url.Parse(targetUrl)
-						q := urlParsed.Query()
-						targetUrlEnc := q.Get("url")
-
-						var targetUrlOri []byte = make([]byte, 1024)
-
-						urlLen, _ := base64.NewDecoder(base64.StdEncoding, strings.NewReader(targetUrlEnc)).Read(targetUrlOri)
-
-						targetUrl = string(targetUrlOri[:urlLen])
+						picsetId := urlParsed.Query().Get("viewg")
+						picsetName = picsetId + "-" + picsetName
 
 						// download in disk, save to local
 						//helper.MakeDir(saveDir + "/" + picsetName)
 
-						logs.Log.Warning("will request picsetlsit->picset: %v ori=%v", targetUrl, targetUrlEnc)
+						logs.Log.Warning("will request picsetlsit->picset: %v picsetName=%s", targetUrl, picsetName)
 
 						// queue request the picset detail
 						ctx.AddQueue(
@@ -150,9 +146,9 @@ var Aname6 = &Spider{
 								Url:  targetUrl,
 								Rule: "PICSET",
 								Temp: map[string]interface{}{
-									"DIR":       saveDir + "/",
-									"THUMB_URL": img,
-									//"PICSETNAME": picsetName,
+									"DIR":        saveDir + "/",
+									"THUMB_URL":  img,
+									"PICSETNAME": picsetName,
 								},
 								Header: http.Header{
 									//"Accept-Language":           []string{"zh-CN,zh"},
@@ -167,6 +163,8 @@ var Aname6 = &Spider{
 						//helper.DownloadObject(img, saveDir+"/"+picsetName, "thumb")
 					})
 
+					// other
+
 				},
 			},
 
@@ -177,12 +175,12 @@ var Aname6 = &Spider{
 					"IMAGEURL",
 				},
 				ParseFunc: func(ctx *Context) {
-					// picset like: https://www.4493.com/gaoqingmeinv/134254/1.htm
 					query := ctx.GetDom()
 
-					title := query.Find("title").Text()
+					//title := query.Find("title").Text()
+					picsetName := ctx.GetTemp("PICSETNAME", "").(string)
 
-					saveDir := helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + title
+					saveDir := helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot + picsetName
 					helper.MakeDir(saveDir)
 					helper.MakeDir(saveDir + "/thumbs")
 
@@ -190,7 +188,7 @@ var Aname6 = &Spider{
 					helper.DownloadObject(thumbUrl, saveDir, "thumb")
 
 					writeConfig := map[string]string{
-						"title":   title,
+						"title":   picsetName,
 						"url":     ctx.GetUrl(),
 						"tags":    "",
 						"pubdate": "",
@@ -198,23 +196,16 @@ var Aname6 = &Spider{
 
 					helper.WritePicsetConfig(writeConfig, saveDir)
 
-					query.Find(".thumbs").Find("tr").Each(func(tri int, trs *goquery.Selection) {
-						colspan, _ := trs.Attr("colspan")
-						if colspan != "" {
-							return
-						}
+					query.Find(".links2").Each(func(imgi int, imga *goquery.Selection) {
 
-						trs.Find("a").Each(func(tdi int, tds *goquery.Selection) {
+						largePic, _ := imga.Attr("href")
+						littlePic, _ := imga.Find("img").Attr("src")
 
-							largePic, _ := tds.Attr("href")
-							littlePic, _ := tds.Find("img").Attr("src")
+						largePic = helper.FixUrl(largePic, ctx.GetUrl())
+						littlePic = helper.FixUrl(littlePic, ctx.GetUrl())
 
-							largePic = helper.FixUrl(largePic, ctx.GetUrl())
-							littlePic = helper.FixUrl(littlePic, ctx.GetUrl())
-
-							helper.DownloadObject(largePic, saveDir, "")
-							helper.DownloadObject(littlePic, saveDir+"/thumbs", "")
-						})
+						helper.DownloadObject(largePic, saveDir, "")
+						helper.DownloadObject(littlePic, saveDir+"/thumbs", "")
 
 					})
 

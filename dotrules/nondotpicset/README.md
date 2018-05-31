@@ -1,6 +1,5 @@
 todo:
-	- https://github.com/go-bootstrap
 	- beego
+	- paysapi
 
-
-go-bootstrap: try failed on windows, trying on linux.
+taniago is on the way.
