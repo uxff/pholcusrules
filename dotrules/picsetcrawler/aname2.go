@@ -6,7 +6,7 @@ curl http://japanfuckpics.com/
 记录图库资源
 PICSETNAME,IMG_OF_PICSET
 dev:done
-download:unknown
+download:done,12.1GB
 
 
 */

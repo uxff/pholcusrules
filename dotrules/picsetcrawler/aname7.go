@@ -5,8 +5,8 @@ curl http://sexygirlcity.com/index.php?gal=0_1
 需求：
  - 下载静态网站中的图集
  - 记录图库资源
-dev:undown
-download:undown
+dev:done
+download:done,12.3GB
 
 
 */
@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	//"strconv"
 
 	//"sync"
@@ -60,10 +61,10 @@ var Aname7 = &Spider{
 		Root: func(ctx *Context) {
 
 			entranceUrl := helper.AIR_CONFIGS[ctx.GetName()].FirstPage
-			keyIn := ctx.GetKeyin()
-			if len(keyIn) > 4 {
-				entranceUrl = keyIn
-			}
+			//			keyIn := ctx.GetKeyin()
+			//			if len(keyIn) > 4 {
+			//				entranceUrl = keyIn
+			//			}
 
 			logs.Log.Warning("start with url:%v", entranceUrl)
 			helper.MakeDir(helper.AIR_CONFIGS[ctx.GetName()].DownloadRoot)
@@ -145,8 +146,6 @@ var Aname7 = &Spider{
 					}
 
 					// <div id="id_container" class="thumbs container xx">
-					trs := query.Find(".pager").Parent().Find("table").Find("tr")
-					logs.Log.Warning("the trs.lengh=%d", trs.Length())
 
 					lis := query.Find(".pager").Parent().Find("table").Find("tr").Find("a")
 					lis.Each(func(i int, s *goquery.Selection) {
@@ -156,7 +155,6 @@ var Aname7 = &Spider{
 
 						targetUrl, _ := s.Attr("href")
 						img, _ := s.Find("img").Eq(0).Attr("src")
-						picsetName, _ := s.Find("img").Eq(0).Attr("alt")
 
 						if len(targetUrl) == 0 || targetUrl[0] == '#' {
 							return
@@ -165,6 +163,10 @@ var Aname7 = &Spider{
 						img = helper.FixUrl(img, ctx.GetUrl())
 						//logs.Log.Warning("get a set url:%v", targetUrl)
 						targetUrl = helper.FixUrl(targetUrl, ctx.GetUrl())
+
+						picsetName, _ := s.Find("img").Eq(0).Attr("alt")
+						// space charactors will trigger error of make dir
+						picsetName = strings.TrimSpace(picsetName)
 
 						urlParsed, _ := url.Parse(targetUrl)
 						picsetId := urlParsed.Query().Get("viewg")
