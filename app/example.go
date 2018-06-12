@@ -19,10 +19,10 @@ import (
 	"github.com/henrylee2cn/pholcus/web"
 
 	_ "github.com/uxff/pholcusrules/dotrules/agricultures"
+	_ "github.com/uxff/pholcusrules/dotrules/dotpicset"
 	_ "github.com/uxff/pholcusrules/dotrules/duanwenxue"
 	_ "github.com/uxff/pholcusrules/dotrules/kuaidaili"
 	_ "github.com/uxff/pholcusrules/dotrules/nondotpicset"
-	_ "github.com/uxff/pholcusrules/dotrules/picsetcrawler"
 	_ "github.com/uxff/pholcusrules/dotrules/qzone"
 	_ "github.com/uxff/pholcusrules/dotrules/vote"
 	_ "github.com/uxff/pholcusrules/dotrules/wx100000p"
@@ -192,6 +192,11 @@ func writeFlag() {
 	cache.Task.FailureInherit = *failureInheritflag
 }
 
+func ClearHistory() {
+	os.RemoveAll("./pholcus_pkg/history/")
+}
+
 func main() {
+	ClearHistory()
 	DefaultRun(uiDefault)
 }
