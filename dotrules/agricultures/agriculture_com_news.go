@@ -158,7 +158,8 @@ var Agriculture_com = &Spider{
 					contentDom.Find(".square").Remove()
 					contentDom.Find(".leaderboard").Remove()
 
-					content, _ := contentDom.Html()
+					//content, _ := contentDom.Html()
+					content := contentDom.Text()
 
 					// 过滤标签
 					//re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
