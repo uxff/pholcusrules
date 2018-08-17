@@ -32,7 +32,6 @@ type YoudaoFreeTranslator struct {
 	toLang   string
 	queryStr string
 	retStr   string
-	tasks    map[int]*YoudaoFreeTransTask
 }
 
 type YoudaoFreeTransRes struct {
@@ -98,19 +97,4 @@ func (this *YoudaoFreeTranslator) Translate(str string) (string, error) {
 		contentLineAbsLen = 20
 	}
 	return "", fmt.Errorf("response could not unmarshal:%s...", targetRes[:contentLineAbsLen])
-}
-
-func (this *YoudaoFreeTranslator) AsyncTranslate(str string) <-chan *TransRes {
-	//transTaskNextId++
-	//return youdaofreeTransTaskNextId
-	theRetChan := make(chan *TransRes, 1)
-	go func() {
-		ret, err := this.Translate(str)
-		theRetChan <- &TransRes{Res: ret, Err: err}
-	}()
-
-	return theRetChan
-}
-func (this *YoudaoFreeTranslator) GetTransResult(taskId int) (string, error) {
-	return "", nil
 }
