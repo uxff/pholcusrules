@@ -9,11 +9,13 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/henrylee2cn/pholcus/app"
 	"github.com/henrylee2cn/pholcus/cmd"
 	"github.com/henrylee2cn/pholcus/common/gc"
 	"github.com/henrylee2cn/pholcus/config"
+	"github.com/henrylee2cn/pholcus/logs" //信息输出
 	"github.com/henrylee2cn/pholcus/runtime/cache"
 	"github.com/henrylee2cn/pholcus/runtime/status"
 	"github.com/henrylee2cn/pholcus/web"
@@ -163,8 +165,13 @@ func run(ui string) {
 	switch ui {
 	case "web":
 		go web.Run()
+		<-ctrl
 	case "cmd":
+		logs.Log.Notice("cmd run start")
+
 		cmd.Run()
+		logs.Log.Notice("cmd run over")
+		time.Sleep(time.Second)
 	}
 
 	/*
@@ -174,7 +181,6 @@ func run(ui string) {
 		}
 	*/
 
-	<-ctrl
 }
 
 func writeFlag() {
