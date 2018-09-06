@@ -96,18 +96,3 @@ func (this *YoudaoTranslator) Translate(str string) (string, error) {
 	}
 	return "", fmt.Errorf("response could not unmarshal:%s...", targetRes[:contentLineAbsLen])
 }
-
-func (this *YoudaoTranslator) AsyncTranslate(str string) <-chan *TransRes {
-	//transTaskNextId++
-	theRetChan := make(chan *TransRes, 1)
-	go func() {
-		ret, err := this.Translate(str)
-		theRetChan <- &TransRes{Res: ret, Err: err}
-
-	}()
-
-	return theRetChan
-}
-func (this *YoudaoTranslator) GetTransResult(taskId int) (string, error) {
-	return "", nil
-}

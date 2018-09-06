@@ -14,15 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
-)
-
-const (
-	STATUS_NONE = iota
-	STATUS_DOING
-	STATUS_OK
-	STATUS_FAIL
 )
 
 const (
@@ -33,7 +25,6 @@ const (
 const MAX_TRY_TIMES = 5
 
 type BaiduTransTask struct {
-	id        int
 	fromLang  string
 	toLang    string
 	queryStr  string
@@ -43,14 +34,13 @@ type BaiduTransTask struct {
 	failTimes int
 }
 
+// this type implement Translator
 type BaiduTranslator struct {
 	fromLang string
 	toLang   string
-	queryStr string
-	retStr   string
-	tasks    map[int]*BaiduTransTask
 }
 
+// trans res defined by baidu
 type BaiduTransRes struct {
 	From         string `json:"from"`
 	To           string `json:"to"`
@@ -60,21 +50,19 @@ type BaiduTransRes struct {
 	} `json:"trans_result"`
 }
 
-var baiduTransTaskNextId = 0
 var baidu_appid string
 var baidu_appsecret string
 
-//var taskFinishChan chan *BaiduTransTask
-
 func init() {
-	//if this.tasks == nil {
-	//	this.tasks = make(map[int]*BaiduTransTask, 0)
-	//}
 }
 
 func (this *BaiduTranslator) SetApiConfig(conf map[string]interface{}) {
-	baidu_appid, _ = conf["appid"].(string)
-	baidu_appsecret, _ = conf["appsecret"].(string)
+	if _, ok := conf["appid"]; ok {
+		baidu_appid, _ = conf["appid"].(string)
+	}
+	if _, ok := conf["appsecret"]; ok {
+		baidu_appsecret, _ = conf["appsecret"].(string)
+	}
 }
 
 func (this *BaiduTranslator) SetFromLang(lang string) {
@@ -85,61 +73,18 @@ func (this *BaiduTranslator) SetToLang(lang string) {
 	this.toLang = lang
 }
 
-func (this *BaiduTranslator) Translate(str string) (string, error) {
-	if this.tasks == nil {
-		this.tasks = make(map[int]*BaiduTransTask, 0)
+func (this *BaiduTranslator) Translate(str string) (res string, err error) {
+	failTimes := 0
+	task := &BaiduTransTask{queryStr: str, fromLang: this.fromLang, toLang: this.toLang}
+
+	for failTimes = 0; failTimes < MAX_TRY_TIMES; failTimes++ {
+		res, err = task.RunTrans()
+		if err == nil {
+			break
+		}
 	}
 
-	theChan := this.AsyncTranslate(str)
-
-	theRes := <-theChan
-
-	//	this.tasks[taskId].Wait(time.Second * 10)
-	//	if this.tasks[taskId].status == STATUS_OK {
-	//		return this.tasks[taskId].retStr, nil
-	//	}
-
-	return theRes.Res, theRes.Err
-	//return this.tasks[taskId].retStr, fmt.Errorf(this.tasks[taskId].failMsg)
-	//return this.retStr, err
-
-}
-func (this *BaiduTranslator) AsyncTranslate(str string) <-chan *TransRes {
-
-	baiduTransTaskNextId++
-	task := &BaiduTransTask{id: baiduTransTaskNextId, queryStr: str, status: STATUS_NONE, fromLang: this.fromLang, toLang: this.toLang}
-
-	theChan := make(chan *TransRes, 1)
-
-	go func() {
-		mu := &sync.Mutex{}
-		mu.Lock()
-		defer mu.Unlock()
-		this.tasks[baiduTransTaskNextId] = task
-		task.Start()
-
-		tranRes := &TransRes{}
-		tranRes.Res, tranRes.Err = task.GetResult()
-
-		theChan <- tranRes
-
-	}()
-
-	//this.tasks = append(this.tasks, task)
-	//task.Start()
-	return theChan
-}
-
-func (this *BaiduTranslator) GetTransResult(taskId int) (ret string, err error) {
-	theTask, ok := this.tasks[taskId]
-	if !ok {
-		err = fmt.Errorf("task id not exist:%v", taskId)
-		return "", err
-	}
-
-	theTask.Wait(time.Second * 10)
-	return theTask.GetResult()
-	//return ret, err
+	return res, err
 }
 
 /*
@@ -158,29 +103,6 @@ func makeSignOfBaidu(params map[string]string) string {
 	return sign
 }
 
-func (this *BaiduTransTask) Start() {
-	if this.status == STATUS_NONE {
-		this.status = STATUS_DOING
-	}
-
-	if this.status == STATUS_OK {
-		return
-	}
-
-	if this.failTimes > MAX_TRY_TIMES {
-		return
-	}
-
-	for this.failTimes = 0; this.failTimes < MAX_TRY_TIMES; this.failTimes++ {
-		_, err := this.RunTrans()
-		if err == nil {
-			this.status = STATUS_OK
-			break
-		}
-		this.failMsg = err.Error()
-	}
-}
-
 func (this *BaiduTransTask) RunTrans() (string, error) {
 
 	if this.fromLang == "" {
@@ -189,8 +111,6 @@ func (this *BaiduTransTask) RunTrans() (string, error) {
 	if this.toLang == "" {
 		this.fromLang = "auto"
 	}
-
-	//this.queryStr
 
 	contentType := "application/x-www-form-urlencoded"
 
@@ -207,7 +127,7 @@ func (this *BaiduTransTask) RunTrans() (string, error) {
 		return "", err
 	}
 
-	// to do translate
+	// do translate
 	//this.retStr = str
 	allRetBytes, err := ioutil.ReadAll(res.Body)
 
@@ -227,45 +147,4 @@ func (this *BaiduTransTask) RunTrans() (string, error) {
 
 	return this.retStr, err
 
-}
-
-// you should use channel to wait, you should use context to timeout
-func (this *BaiduTransTask) Wait(timeout time.Duration) bool {
-	tChan := time.After(timeout)
-
-	for {
-		select {
-		case <-tChan:
-			return false
-		default:
-			if this.status == STATUS_FAIL || this.status == STATUS_OK {
-				return true
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}
-	return false
-}
-
-func (this *BaiduTransTask) GetStatus() int {
-	return this.status
-}
-
-func (this *BaiduTransTask) GetResult() (string, error) {
-
-	switch this.status {
-	case STATUS_NONE:
-		if this.failTimes < MAX_TRY_TIMES {
-			go this.Start()
-		}
-		return "", fmt.Errorf("its doing, not done yet")
-	case STATUS_DOING:
-		return "", fmt.Errorf("its doing, not done yet")
-	case STATUS_OK:
-		return this.retStr, nil
-	case STATUS_FAIL:
-		return "", fmt.Errorf("its failed %d times, now trying again", this.failTimes)
-	}
-
-	return "", nil
 }

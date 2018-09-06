@@ -2,17 +2,6 @@ package agricultures
 
 // 基础包
 import (
-	// "log"
-
-	"github.com/henrylee2cn/pholcus/app/downloader/request" //必需
-	. "github.com/henrylee2cn/pholcus/app/spider"           //必需
-	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
-	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
-	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
-	articlewriter "github.com/uxff/pholcusrules/articlewriter"
-	"github.com/uxff/pholcusrules/consts"
-	"github.com/uxff/pholcusrules/langtranslate"
-
 	// net包
 	"net/http" //设置http.Header
 	// "net/url"
@@ -29,6 +18,15 @@ import (
 	"fmt"
 	// "math"
 	// "time"
+
+	"github.com/henrylee2cn/pholcus/app/downloader/request" //必需
+	. "github.com/henrylee2cn/pholcus/app/spider"           //必需
+	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
+	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
+	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
+	articlewriter "github.com/uxff/pholcusrules/articlewriter"
+	"github.com/uxff/pholcusrules/consts"
+	"github.com/uxff/pholcusrules/langtranslate"
 )
 
 const (
@@ -198,6 +196,7 @@ var Agriculture_com = &Spider{
 
 					// 长内容需要拆开翻译，翻译后拼装
 					contentArr := strings.Split(content, "\n")
+					//logs.Log.Notice("content from dom count=%d", len(contentArr))
 					contentTransed := ""
 					for _, contentLine := range contentArr {
 						contentTransRet, err := trans.Translate(contentLine)
@@ -208,7 +207,7 @@ var Agriculture_com = &Spider{
 							}
 							logs.Log.Warning("trans error:%v :%v", err, contentLine[:contentLineAbsLen])
 						}
-						contentTransed += contentTransRet + "\n"
+						contentTransed += contentTransRet + "<br/>\n"
 					}
 					//content = contentTransRet
 
