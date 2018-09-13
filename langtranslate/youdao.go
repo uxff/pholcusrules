@@ -21,17 +21,12 @@ const (
 )
 
 var youdao_cookie = YOUDAO_API_COOKIE
-var youdaoTransTaskNextId = 0
-
-type YoudaoTransTask struct {
-}
 
 type YoudaoTranslator struct {
 	fromLang string
 	toLang   string
 	queryStr string
 	retStr   string
-	tasks    map[int]*YoudaoTransTask
 }
 
 type YoudaoTransRes struct {
