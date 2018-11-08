@@ -11,7 +11,6 @@ import (
 	"github.com/henrylee2cn/pholcus/app/downloader/request" //必需
 	. "github.com/henrylee2cn/pholcus/app/spider"           //必需
 	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
-	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
 )
 
@@ -101,7 +100,6 @@ var Xiangbao1 = &Spider{
 					if pubtimeIdx >= 0 && len(pubtime) > len("发布时间：")+19 {
 						pubtime = pubtime[pubtimeIdx+len("发布时间：") : pubtimeIdx+len("发布时间：")+19]
 					}
-					logs.Log.Debug("pubtime:%s", pubtime)
 
 					// 获取内容
 					content, _ := query.Find(".ben-sx").Html()
@@ -109,7 +107,7 @@ var Xiangbao1 = &Spider{
 					// Title
 					title := ctx.GetTemp("th", "")
 					// Author
-					contactor := query.Find(".ben-zone").Find(".cteldian1n")
+					contactor := query.Find(".ben-zone")
 					//contactorHtml, _ := contactor.Html()
 					contactorNoUrl, _ := contactor.Find("img").Attr("src")
 					contactorNo := ""
