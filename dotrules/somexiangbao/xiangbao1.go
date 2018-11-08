@@ -2,8 +2,9 @@ package somexiangbao
 
 // 基础包
 import (
-	"encoding/json"
+	"encoding/base64"
 	"net/http" //设置http.Header
+	"net/url"
 	"strings"
 	// "log"
 
@@ -11,12 +12,12 @@ import (
 	. "github.com/henrylee2cn/pholcus/app/spider"           //必需
 	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
 	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
-	articlewriter "github.com/uxff/pholcusrules/articlewriter"
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
 )
 
 //思路
 // 抓取资讯 抓取发布者 自动注册 自动发布到对应板块
+// done
 
 const (
 	HOME_URL = "http://www.baigou.net"
@@ -44,7 +45,7 @@ var Xiangbao1 = &Spider{
 		Root: func(ctx *Context) {
 			ctx.AddQueue(&request.Request{
 				Url:  HOME_URL,
-				Rule: "TIMELINE",
+				Rule: "HOMEPAGE",
 				Header: http.Header{
 					"User-Agent": []string{AGENT_PUBLIC},
 				},
@@ -52,110 +53,91 @@ var Xiangbao1 = &Spider{
 		},
 
 		Trunk: map[string]*Rule{
-			"TIMELINE": {
+			"HOMEPAGE": {
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
-					query.Find(".site-content").Find("article").Each(func(j int, s *goquery.Selection) {
-						a := s.Find("a")
-						if url, ok := a.Attr("href"); ok {
-							// log.Print(url)
-							p := a.Find("p")
+					query.Find(".bx-newl").Find("li").Each(func(j int, s *goquery.Selection) {
+						cate := s.Find("a").Eq(0)
 
-							ctx.AddQueue(&request.Request{Url: HOME_URL + url, Rule: "DETAIL", Header: http.Header{"Referer": []string{HOME_URL}, "User-Agent": []string{AGENT_PUBLIC}}, Temp: request.Temp{"abstract": p.Text()}})
+						cateName := cate.Text()
+
+						th := s.Find("a").Eq(1)
+						thLink, ok := th.Attr("href")
+						thName := th.Text()
+
+						if ok {
+							ctx.AddQueue(&request.Request{
+								Url:    thLink,
+								Rule:   "TH",
+								Header: http.Header{"Referer": []string{HOME_URL}, "User-Agent": []string{AGENT_PUBLIC}},
+								Temp: request.Temp{
+									"cate": cateName,
+									"th":   thName,
+								},
+							})
 						}
+
 					})
 
 				},
 			},
-			"DETAIL": {
+			"TH": {
 				//注意：有无字段语义和是否输出数据必须保持一致
 				ItemFields: []string{
 					"Title",
-					"Author",
+					"User",
+					"UserAuthed",
+					"Contactor",
+					"Content",
 					"Thumb",
 					"Time",
-					"Abstract",
-					"Keywords",
-					"Content",
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
-					// 获取内容
-					content, _ := query.Find(".entry-content").Html()
 
-					// 过滤标签
-					//re, _ := regexp.Compile("\\<[\\S\\s]+?\\>")
-					//contentText := re.ReplaceAllString(content, "")
-					// 内容中如果图片不是
+					// pubtime
+					pubtime := query.Find(".ben-info").Find(".cen").Text()
+					pubtimeIdx := strings.Index(pubtime, "发布时间：")
+					if pubtimeIdx >= 0 && len(pubtime) > len("发布时间：")+19 {
+						pubtime = pubtime[pubtimeIdx+len("发布时间：") : pubtimeIdx+len("发布时间：")+19]
+					}
+					logs.Log.Debug("pubtime:%s", pubtime)
+
+					// 获取内容
+					content, _ := query.Find(".ben-sx").Html()
 
 					// Title
-					title := query.Find(".entry-title").Text()
+					title := ctx.GetTemp("th", "")
 					// Author
-
-					// Addresses & Address
-					addresses, ok := query.Find(".post-cover-title-image").Attr("style")
-					if ok {
-						attrArr := strings.Split(addresses, ";")
-						for _, subAttr := range attrArr {
-							if subAttr[:20] == "background-image:url" {
-								addresses = subAttr[20:]
-								addresses = strings.Trim(addresses, " ()'\"")
-								break
-							}
+					contactor := query.Find(".ben-zone").Find(".cteldian1n")
+					//contactorHtml, _ := contactor.Html()
+					contactorNoUrl, _ := contactor.Find("img").Attr("src")
+					contactorNo := ""
+					if uo, err := url.Parse(contactorNoUrl); err == nil {
+						contactorNo = uo.Query().Get("vid")
+						if b, err := base64.StdEncoding.DecodeString(contactorNo); err != nil {
+							contactorNo = string(b)
 						}
-
 					}
 
-					// Time
-					pubtime := query.Find(".entry-date").Text()
-
-					// Abstract
-					author := ""
-					abstract := ctx.GetTemp("abstract", "").(string)
-
-					// Keywords
-					keywords := ""
-
-					query.Find(".tag").Each(func(ti int, q *goquery.Selection) {
-						keywords = keywords + "," + q.Text()
+					userNameText := query.Find(".bx-ben-r-a").Text()
+					userAuthed := ""
+					userAuthedImgs := query.Find(".bx-ben-r-a").Find("img")
+					userAuthedImgs.Each(func(i int, s *goquery.Selection) {
+						if u, ok := s.Attr("title"); ok == true {
+							userAuthed += u + ";"
+						}
 					})
-
-					keywords = strings.Trim(keywords, ", \t\r\n")
-
-					// 输出到mysql
-					artInfo := map[string]string{
-						"title":       title,
-						"author":      author,
-						"surface_url": addresses,
-						"outer_url":   ctx.GetUrl(),
-						"origin":      "wx100000p",
-						"remark":      keywords,
-						"abstract":    abstract,
-						"content":     content,
-						//"pubdate": pubtime,
-					}
-
-					buf, err := json.Marshal([]map[string]string{artInfo})
-					if err != nil {
-						logs.Log.Warning("json marshal error:%v", err)
-					}
-
-					writer := &articlewriter.ArticleWriter{}
-
-					_, err = writer.Write(buf)
-					if err != nil {
-						logs.Log.Warning("write wx100000p to mysql error:%v", err)
-					}
 
 					// 结果存入Response中转
 					ctx.Output(map[int]interface{}{
 						0: title,
-						1: author,
-						2: addresses,
-						3: pubtime,
-						4: abstract,
-						5: keywords,
-						6: content,
+						1: userNameText,
+						2: userAuthed,
+						3: contactorNo,
+						4: content,
+						5: "",
+						6: pubtime,
 					})
 				},
 			},
