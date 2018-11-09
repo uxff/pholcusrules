@@ -113,7 +113,7 @@ var Xiangbao1 = &Spider{
 					contactorNo := ""
 					if uo, err := url.Parse(contactorNoUrl); err == nil {
 						contactorNo = uo.Query().Get("vid")
-						if b, err := base64.URLEncoding.DecodeString(contactorNo); err != nil {
+						if b, err := base64.URLEncoding.DecodeString(contactorNo); err == nil {
 							contactorNo = string(b)
 						}
 					}
