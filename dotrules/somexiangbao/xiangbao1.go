@@ -90,6 +90,7 @@ var Xiangbao1 = &Spider{
 					"发布内容",
 					"图片",
 					"发布时间",
+					"分类",
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
@@ -115,8 +116,6 @@ var Xiangbao1 = &Spider{
 						}
 					})
 
-					// Title
-					title := ctx.GetTemp("th", "")
 					// Author
 					contactor := query.Find(".ben-zone")
 					//contactorHtml, _ := contactor.Html()
@@ -139,13 +138,14 @@ var Xiangbao1 = &Spider{
 
 					// 结果存入Response中转
 					ctx.Output(map[int]interface{}{
-						0: title,
+						0: ctx.GetTemp("th", ""),
 						1: TrimUserName(userNameText),
 						2: userAuthed,
 						3: contactorNo,
 						4: content,
 						5: strings.Join(thumbs, ";;"),
 						6: pubtime,
+						7: ctx.GetTemp("cate", ""),
 					})
 				},
 			},
