@@ -83,13 +83,13 @@ var Xiangbao1 = &Spider{
 			"TH": {
 				//注意：有无字段语义和是否输出数据必须保持一致
 				ItemFields: []string{
-					"Title",
-					"User",
-					"UserAuthed",
-					"Contactor",
-					"Content",
-					"Thumb",
-					"Time",
+					"标题",
+					"发布用户",
+					"是否认证",
+					"联系人",
+					"发布内容",
+					"图片",
+					"发布时间",
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
@@ -102,7 +102,18 @@ var Xiangbao1 = &Spider{
 					}
 
 					// 获取内容
-					content, _ := query.Find(".ben-sx").Html()
+					contentObj := query.Find(".ben-sx")
+					content, _ := contentObj.Html()
+
+					// 缩略图
+					thumbs := []string{}
+					contentObj.Find("img").Each(func(i int, s *goquery.Selection) {
+						if imgurl, ok := s.Attr("src"); ok {
+							if imgurl != "http://www.baigou.net/images/default/img_ico.gif" {
+								thumbs = append(thumbs, imgurl)
+							}
+						}
+					})
 
 					// Title
 					title := ctx.GetTemp("th", "")
@@ -120,8 +131,7 @@ var Xiangbao1 = &Spider{
 
 					userNameText := query.Find(".bx-ben-r-a").Text()
 					userAuthed := ""
-					userAuthedImgs := query.Find(".bx-ben-r-a").Find("img")
-					userAuthedImgs.Each(func(i int, s *goquery.Selection) {
+					query.Find(".bx-ben-r-a").Find("img").Each(func(i int, s *goquery.Selection) {
 						if u, ok := s.Attr("title"); ok == true {
 							userAuthed += u + ";"
 						}
@@ -130,15 +140,30 @@ var Xiangbao1 = &Spider{
 					// 结果存入Response中转
 					ctx.Output(map[int]interface{}{
 						0: title,
-						1: userNameText,
+						1: TrimUserName(userNameText),
 						2: userAuthed,
 						3: contactorNo,
 						4: content,
-						5: "",
+						5: strings.Join(thumbs, ";;"),
 						6: pubtime,
 					})
 				},
 			},
 		},
 	},
+}
+
+func TrimUserName(text string) string {
+	strPre := "用户： "
+	strTail := "认证："
+
+	if prePos := strings.Index(text, strPre); prePos >= 0 {
+		text = text[prePos+len(strPre):]
+	}
+
+	if tailPos := strings.Index(text, strTail); tailPos >= 0 {
+		text = text[:tailPos]
+	}
+
+	return text
 }
