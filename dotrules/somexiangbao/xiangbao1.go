@@ -2,6 +2,7 @@ package somexiangbao
 
 // 基础包
 import (
+	"fmt"
 	"encoding/base64"
 	"net/http" //设置http.Header
 	"net/url"
@@ -82,6 +83,7 @@ var Xiangbao1 = &Spider{
 			},
 			"TH": {
 				//注意：有无字段语义和是否输出数据必须保持一致
+				// url like: http://www.baigou.net/bencandy-fid-452-id-294390.html
 				ItemFields: []string{
 					"标题",
 					"发布用户",
@@ -91,12 +93,19 @@ var Xiangbao1 = &Spider{
 					"图片",
 					"发布时间",
 					"分类",
+					"tid",
 				},
 				ParseFunc: func(ctx *Context) {
 					query := ctx.GetDom()
 
 					// pubtime
 					pubtime := query.Find(".ben-info").Find(".cen").Text()
+					tidInfoIdx := strings.Index(pubtime, "信息编号：")
+					tid := 0
+					if tidInfoIdx >= 0 {
+						fmt.Sscanf(pubtime[tidInfoIdx+len("信息编号："):], "%d", &tid)
+					}
+
 					pubtimeIdx := strings.Index(pubtime, "发布时间：")
 					if pubtimeIdx >= 0 && len(pubtime) > len("发布时间：")+19 {
 						pubtime = pubtime[pubtimeIdx+len("发布时间：") : pubtimeIdx+len("发布时间：")+19]
@@ -146,6 +155,7 @@ var Xiangbao1 = &Spider{
 						5: strings.Join(thumbs, ";;"),
 						6: pubtime,
 						7: ctx.GetTemp("cate", ""),
+						8: tid,
 					})
 				},
 			},
