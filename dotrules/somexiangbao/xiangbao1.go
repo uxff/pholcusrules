@@ -2,8 +2,8 @@ package somexiangbao
 
 // 基础包
 import (
-	"fmt"
 	"encoding/base64"
+	"fmt"
 	"net/http" //设置http.Header
 	"net/url"
 	"strings"
