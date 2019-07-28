@@ -25,6 +25,7 @@ import (
 	_ "github.com/uxff/pholcusrules/dotrules/duanwenxue"
 	_ "github.com/uxff/pholcusrules/dotrules/kuaidaili"
 	_ "github.com/uxff/pholcusrules/dotrules/nondotpicset"
+	_ "github.com/uxff/pholcusrules/dotrules/qichacha"
 	_ "github.com/uxff/pholcusrules/dotrules/qzone"
 	_ "github.com/uxff/pholcusrules/dotrules/somexiangbao"
 	_ "github.com/uxff/pholcusrules/dotrules/vote"
