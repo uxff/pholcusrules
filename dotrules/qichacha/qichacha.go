@@ -41,7 +41,7 @@ func init() {
 
 var Qichacha = &Spider{
 	Name:        "Qichacha",
-	Description: "Qichacha KEYIN: [cookie], set pause time: 2s or bigger",
+	Description: "Qichacha KEYIN: input company list file",
 	// Pausetime:    300,
 	Keyin:        KEYIN,
 	Limit:        LIMIT,
