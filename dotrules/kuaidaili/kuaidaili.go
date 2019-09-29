@@ -48,7 +48,8 @@ var Kuaidaili = &Spider{
 	EnableCookie: false,
 	RuleTree: &RuleTree{
 		Root: func(ctx *Context) {
-			cookie := "channelid=0; sid=1516785851105118; Hm_lvt_7ed65b1cc4b810e9fd37959c9bb51b31=1516785861; Hm_lpvt_7ed65b1cc4b810e9fd37959c9bb51b31=1516785874; _ga=GA1.2.2140228708.1516785861; _gid=GA1.2.1413734529.1516785861"
+			//cookie := "channelid=0; sid=1516785851105118; Hm_lvt_7ed65b1cc4b810e9fd37959c9bb51b31=1516785861; Hm_lpvt_7ed65b1cc4b810e9fd37959c9bb51b31=1516785874; _ga=GA1.2.2140228708.1516785861; _gid=GA1.2.1413734529.1516785861"
+			cookie := "channelid=0; sid=1566311104277914; Hm_lvt_7ed65b1cc4b810e9fd37959c9bb51b31=1566311907; _ga=GA1.2.1804874949.1566311907; _gid=GA1.2.1007360879.1566311907; Hm_lpvt_7ed65b1cc4b810e9fd37959c9bb51b31=1566311918"
 			keyIn := strings.Trim(ctx.GetKeyin(), "\r\n\t ")
 
 			if keyIn != "" {

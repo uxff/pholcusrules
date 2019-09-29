@@ -22,10 +22,6 @@ const (
 )
 
 var youdaofree_cookie = YOUDAOFREE_API_COOKIE
-var youdaofreeTransTaskNextId = 0
-
-type YoudaoFreeTransTask struct {
-}
 
 type YoudaoFreeTranslator struct {
 	fromLang string
