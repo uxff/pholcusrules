@@ -6,7 +6,7 @@ requirement: download picset from site
 columns will be record:
 PICSETNAME,IMG_OF_PICSET
 dev:done
-download:not yet, no need
+download:not yet, no need; website has been offline.
 
 comment: this site is random format and random layer in same domain.
 
@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
 	//"strconv"
 	"strings"
 	//"sync"

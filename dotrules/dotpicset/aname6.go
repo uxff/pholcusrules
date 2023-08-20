@@ -7,7 +7,7 @@ curl http://www.asianamateurpussy.com/ with redirect url=xxx
 PICSETNAME,IMG_OF_PICSET
 dev:unknown
 download:unknown
-
+tags: bad albumn structure
 
 */
 
@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
 	//"strconv"
 	"strings"
 	//"sync"
