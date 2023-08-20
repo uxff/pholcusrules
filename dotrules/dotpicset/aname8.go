@@ -15,6 +15,7 @@ download:done,12.3GB
 import (
 	"fmt"
 	"net/http"
+
 	//"strconv"
 
 	//"sync"
@@ -115,7 +116,7 @@ var Aname8 = &Spider{
 					writeConfig := map[string]string{
 						"title":   picsetName,
 						"url":     ctx.GetUrl(),
-						"tags":    "",
+						"tags":    tags,
 						"pubdate": "",
 					}
 
