@@ -1,3 +1,4 @@
+// https://www.duanwenxue.com/
 package duanwenxue
 
 // 基础包
@@ -8,6 +9,7 @@ import (
 	. "github.com/henrylee2cn/pholcus/app/spider"           //必需
 	"github.com/henrylee2cn/pholcus/common/goquery"         //DOM解析
 	"github.com/henrylee2cn/pholcus/logs"                   //信息输出
+
 	// . "github.com/henrylee2cn/pholcus/app/spider/common" //选用
 	articlewriter "github.com/uxff/pholcusrules/articlewriter"
 
@@ -23,6 +25,7 @@ import (
 	//"regexp"
 	"strconv"
 	"strings"
+
 	// 其他包
 	"fmt"
 	// "math"
