@@ -21,10 +21,9 @@ import (
 	"github.com/henrylee2cn/pholcus/web"
 
 	_ "github.com/uxff/pholcusrules/dotrules/agricultures"
-	_ "github.com/uxff/pholcusrules/dotrules/dotpicset"
 	_ "github.com/uxff/pholcusrules/dotrules/duanwenxue"
 	_ "github.com/uxff/pholcusrules/dotrules/kuaidaili"
-	_ "github.com/uxff/pholcusrules/dotrules/nondotpicset"
+	_ "github.com/uxff/pholcusrules/dotrules/mitre"
 	_ "github.com/uxff/pholcusrules/dotrules/qichacha"
 	_ "github.com/uxff/pholcusrules/dotrules/qzone"
 	_ "github.com/uxff/pholcusrules/dotrules/somexiangbao"
